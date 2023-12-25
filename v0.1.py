@@ -54,7 +54,7 @@ def load_level(filename: str) -> list:
     return list(map(lambda x: x.ljust(max_width, '0'), level_map)), (max_width, max_height)
 
 def load_image(name: str) -> list:
-    # pygame.draw.rect(f, pygame.Color('black'), pygame.Rect())
+    '''заглушка для текстурЮ пока не нарисуем'''
     f = pygame.Surface((20, 20))
     f.fill(pygame.Color('white'))
     if name == 'void.png': pass
@@ -78,13 +78,14 @@ def load_image(name: str) -> list:
 
 
 def level_render(text_level: list) -> list:
+    '''прогружает открытый уровень'''
     new_player = entitys = x = y = None
     for y in range(len(text_level)):
         for x in range(len(text_level[y])):
             value = FILE_TRANSLATOR[text_level[y][x]]
-            if value in Spase_tile.basic_spase_textures.keys(): Spase_tile(text_level[y][x], x, y)
-            # elif FILE_TRANSLATOR[text_level[y][x]] in ['D', 'E', 'F', 'G']: entity_tile_group(text_level[y][x], x, y)
-            elif value in ['player']: Entity_tile(text_level[y][x], (40, 1), x, y)
+            if value in Spase_tile.basic_spase_textures.keys(): Spase_tile(text_level[y][x], x, y)  # рендер карты
+            # elif FILE_TRANSLATOR[text_level[y][x]] in ['D', 'E', 'F', 'G']: entity_tile_group(text_level[y][x], x, y)  # рендер врагов
+            elif value in ['player']: Entity_tile(text_level[y][x], (40, 1), x, y)  # рендер игрока карты
     # вернем игрока, а также размер поля в клетках
     return new_player, entitys, x, y
 
@@ -124,6 +125,7 @@ def terminate() -> None:
 
 
 class Spase_tile(pygame.sprite.Sprite):
+    '''класс прогрузки карты'''
     basic_spase_textures = {
         'void': load_image('void.png'),
         'wall_up': load_image('wall_up.png'),
@@ -150,8 +152,8 @@ class Spase_tile(pygame.sprite.Sprite):
             if tile_type not in FILE_TRANSLATOR.values():
                 raise KeyError('wrong key')
 
-
         if tile_type[:4] == 'wall':
+            '''группа стен для колизии существ'''
             walls_group.add(self)
             if tile_type[5:] == 'up': walls_group_up.add(self)
             elif tile_type[5:] == 'down': walls_group_down.add(self)
@@ -161,14 +163,14 @@ class Spase_tile(pygame.sprite.Sprite):
 
         image = self.basic_spase_textures[tile_type]
         self.image = pygame.transform.scale(image if not isinstance(image, list) else image[randint(0, len(image) - 1)], (tile_width, tile_height))
-        pygame.draw.line(self.image, pygame.Color('black'), (tile_width, 0), (tile_width, tile_height), 3)
-        pygame.draw.line(self.image, pygame.Color('black'), (0, tile_height), (tile_width, tile_height), 3)
-        pygame.draw.circle(self.image, pygame.Color('black'), (0.5 * tile_width, 0.5 * tile_height), 1)
+        pygame.draw.line(self.image, pygame.Color('black'), (tile_width, 0), (tile_width, tile_height), 3)  # метка клеток, потом удалить
+        pygame.draw.line(self.image, pygame.Color('black'), (0, tile_height), (tile_width, tile_height), 3)  # метка клеток, потом удалить
+        pygame.draw.circle(self.image, pygame.Color('black'), (0.5 * tile_width, 0.5 * tile_height), 1)  # метка клеток, потом удалить
         self.rect = pygame.Rect(tile_width * pos_x, tile_height * pos_y, tile_width, tile_height)
 
 
-
 class Entity_tile(pygame.sprite.Sprite):
+    '''родительский класс существ(игрока, врагов и т.д.)'''
     basic_entitys_textures = {
         'player': load_image('player.png'),
         'enemy_group1':[load_image('enemy11.png'), load_image('enemy12.png'), load_image('enemy13.png')],
@@ -180,13 +182,16 @@ class Entity_tile(pygame.sprite.Sprite):
     }
 
     class Entity_image(pygame.sprite.Sprite):
+        '''текстурка существа отдельная от модельки'''
         def __init__(self, tile_type, pos_x, pos_y):
             super().__init__(entity_image_group, entity_group, all_sprites_group)
             entity_image = Entity_tile.basic_entitys_textures[tile_type]
             self.image = entity_image if not isinstance(entity_image, list) else entity_image[randint(0, len(entity_image) - 1)]
-            self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - entity_image.get_rect().width * 0.5), int(tile_height * (pos_y + 1) - entity_image.get_rect().height))
+            self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - entity_image.get_rect().width * 0.5),
+                                                   int(tile_height * (pos_y + 1) - entity_image.get_rect().height))
 
     def __init__(self, tile_type: str, size_collision: list, pos_x: str, pos_y: str):
+        '''загрузка модельки и тектуры, отдельно'''
         try:
             tile_type = FILE_TRANSLATOR[tile_type]
         except pygame.error as message:
@@ -197,8 +202,9 @@ class Entity_tile(pygame.sprite.Sprite):
         super().__init__(entity_group, all_sprites_group)
         Spase_tile('floor', pos_x, pos_y)
         self.image = pygame.Surface(size_collision, pygame.SRCALPHA)
-        pygame.draw.rect(self.image, pygame.Color('green'), pygame.Rect(0, 0, *size_collision))
-        self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - self.image.get_rect().width * 0.5), int(tile_height * (pos_y + 1 - self.image.get_rect().height * 0.3) - self.image.get_rect().height))
+        pygame.draw.rect(self.image, pygame.Color('green'), pygame.Rect(0, 0, *size_collision))  # заглушка для модельки, чтобы было видно
+        self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - self.image.get_rect().width * 0.5),
+                                               int(tile_height * (pos_y + 1 - self.image.get_rect().height * 0.3) - self.image.get_rect().height))
 
     def update(self, tick, *args, **kwargs):
         key = args[0]
@@ -219,8 +225,7 @@ class Entity_tile(pygame.sprite.Sprite):
             self.entity_image.rect = self.entity_image.rect.move(*move)
 
 
-
-
+#
 # def entity_tile_group(tile_tipe: str, x: str, y: str) -> None:
 #     if FILE_TRANSLATOR[tile_tipe] == 'enemy_group1': Enemy_group1_tile(x, y)
 #     elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group2': Enemy_group2_tile(x, y)
