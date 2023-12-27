@@ -12,7 +12,7 @@ screen = pygame.display.set_mode(size)
 
 def start_screen():
     intro_text = ["ЗАСТАВКА", "",
-                  "Заставка 1",
+                  "Заставка A",
                   "Если в правилах несколько строк,",
                   "выводить их построчно"]
 
