@@ -27,6 +27,16 @@ FILE_TRANSLATOR = {  # переводит чиловое значение из �
     'K': None
 }
 
+SIZE_COLLISION = {  # константа размеров модельки игрока, врагов и т.д.
+    'player': (40, 1),
+    'enemy_group1': (70, 1),
+    'enemy_group2': (30, 1),
+    'enemy_group3': (30, 1),
+    'enemy_group4': (30, 1),
+    'traps1': (30, 1),
+    'traps2': (30, 1),
+}
+
 def load_image(name: str, color_key=None):
     '''открывает изображение из папки data'''
     fullname = os.path.join('data', name)
@@ -54,7 +64,7 @@ def load_level(filename: str) -> list:
     return list(map(lambda x: x.ljust(max_width, '0'), level_map)), (max_width, max_height)
 
 def load_image(name: str) -> list:
-    '''заглушка для текстурЮ пока не нарисуем'''
+    '''заглушка для текстур, пока не нарисуем'''
     f = pygame.Surface((20, 20))
     f.fill(pygame.Color('white'))
     if name == 'void.png': pass
@@ -69,25 +79,38 @@ def load_image(name: str) -> list:
     elif name == 'floor1.png': f.fill(pygame.Color('blue'))
     elif name == 'floor2.png': f.fill(pygame.Color('blue'))
     elif name == 'floor3.png': f.fill(pygame.Color('blue'))
+    elif name == 'fon.png': return pygame.image.load(open('data/fon.png'))
+
     elif name == 'player.png':
         f = pygame.Surface((40, 70), pygame.SRCALPHA)
         pygame.draw.rect(f, pygame.Color('red'), pygame.Rect(0, 0, 40, 70))
-    elif name == 'fon.png': return pygame.image.load(open('data/fon.png'))
+
+    elif name == 'decor_free1.png' or name == 'decor_free2.png' or name == 'decor_free3.png':
+        f = pygame.Surface((20, 20), pygame.SRCALPHA)
+        pygame.draw.circle(f, pygame.Color('red'), (10, 10), radius=6)
+
+    elif name == 'enemy11.png' or name == 'enemy12.png' or name == 'enemy13.png':
+        f = pygame.Surface((70, 40), pygame.SRCALPHA)
+        pygame.draw.rect(f, pygame.Color('red'), pygame.Rect(0, 0, 70, 40))
     return f
 
 
 
 def level_render(text_level: list) -> list:
     '''прогружает открытый уровень'''
-    new_player = entitys = x = y = None
     for y in range(len(text_level)):
         for x in range(len(text_level[y])):
-            value = FILE_TRANSLATOR[text_level[y][x]]
-            if value in Spase_tile.basic_spase_textures.keys(): Spase_tile(text_level[y][x], x, y)  # рендер карты
-            # elif FILE_TRANSLATOR[text_level[y][x]] in ['D', 'E', 'F', 'G']: entity_tile_group(text_level[y][x], x, y)  # рендер врагов
-            elif value in ['player']: Entity_tile(text_level[y][x], (40, 1), x, y)  # рендер игрока карты
-    # вернем игрока, а также размер поля в клетках
-    return new_player, entitys, x, y
+            value = tile_type_translat(text_level[y][x])
+            if value in Spase_tile.basic_spase_textures.keys():
+                '''рендер карты'''
+                Spase_tile(text_level[y][x], x, y)
+            elif value == 'player':
+                '''рендер игрока'''
+                size_collision = SIZE_COLLISION[value]
+                Pleyer_group_tile(text_level[y][x], size_collision, x, y)
+            elif value in Enemy_group1_tile.basic_entitys_textures.keys():
+                '''рендер врагов'''
+                enemy_tile_group(text_level[y][x], x, y)
 
 
 def start_screen() -> None:
@@ -123,6 +146,17 @@ def terminate() -> None:
     pygame.quit()
     sys.exit()
 
+def tile_type_translat(tile_type):
+    '''переводит значение из файла в текстовое'''
+    try:
+        tile_type = FILE_TRANSLATOR[tile_type]
+    except pygame.error as message:
+        print('level file is broken')
+        raise SystemExit(message)
+    except KeyError:
+        if tile_type not in FILE_TRANSLATOR.values():
+            raise KeyError('wrong key')
+    return tile_type
 
 class Spase_tile(pygame.sprite.Sprite):
     '''класс прогрузки карты'''
@@ -138,29 +172,31 @@ class Spase_tile(pygame.sprite.Sprite):
         'wall_down_right_corner': load_image('wall_down_right_corner.png'),
         'floor': [load_image('floor1.png'), load_image('floor2.png'), load_image('floor3.png')],
         'decor_free': [load_image('decor_free1.png'), load_image('decor_free2.png'), load_image('decor_free3.png')],
-        'decor_collision': [load_image('decor_collision1.png'), load_image('decor_collision2.png'), load_image('decor_collision3.png')],
     }
+
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(spase_group, all_sprites_group)
-        try:
-            tile_type = FILE_TRANSLATOR[tile_type]
+        tile_type = tile_type_translat(tile_type)
+        self.add_group(tile_type, pos_x, pos_y)
+        self.make_texture(tile_type, pos_x, pos_y)
 
-        except pygame.error as message:
-            print('level file is broken')
-            raise SystemExit(message)
-        except KeyError:
-            if tile_type not in FILE_TRANSLATOR.values():
-                raise KeyError('wrong key')
 
-        if tile_type[:4] == 'wall':
-            '''группа стен для колизии существ'''
+    def add_group(self, tile_type, pos_x, pos_y):
+        '''добавляет в необходимую групу'''
+        if tile_type[:4] == 'void': void_spase_group.add(self)
+        elif tile_type[:5] == 'decor':
+            decor_group.add(self)
+            Spase_tile('floor', pos_x, pos_y)
+        elif tile_type[:4] == 'wall':
+            '''добавление в группу стен для колизии существ'''
             walls_group.add(self)
             if tile_type[5:] == 'up': walls_group_up.add(self)
             elif tile_type[5:] == 'down': walls_group_down.add(self)
             elif tile_type[5:] == 'left': walls_group_left.add(self)
             elif tile_type[5:] == 'right': walls_group_right.add(self)
-            print(tile_type[5:])
 
+    def make_texture(self, tile_type, pos_x, pos_y):
+        '''загружает текстуру объекта'''
         image = self.basic_spase_textures[tile_type]
         self.image = pygame.transform.scale(image if not isinstance(image, list) else image[randint(0, len(image) - 1)], (tile_width, tile_height))
         pygame.draw.line(self.image, pygame.Color('black'), (tile_width, 0), (tile_width, tile_height), 3)  # метка клеток, потом удалить
@@ -173,10 +209,10 @@ class Entity_tile(pygame.sprite.Sprite):
     '''родительский класс существ(игрока, врагов и т.д.)'''
     basic_entitys_textures = {
         'player': load_image('player.png'),
-        'enemy_group1':[load_image('enemy11.png'), load_image('enemy12.png'), load_image('enemy13.png')],
-        'enemy_group2':[load_image('enemy21.png'), load_image('enemy22.png'), load_image('enemy23.png')],
-        'enemy_group3':[load_image('enemy31.png'), load_image('enemy32.png'), load_image('enemy33.png')],
-        'enemy_group4':[load_image('enemy41.png'), load_image('enemy42.png'), load_image('enemy43.png')],
+        'enemy_group1': [load_image('enemy11.png'), load_image('enemy12.png'), load_image('enemy13.png')],
+        'enemy_group2': [load_image('enemy21.png'), load_image('enemy22.png'), load_image('enemy23.png')],
+        'enemy_group3': [load_image('enemy31.png'), load_image('enemy32.png'), load_image('enemy33.png')],
+        'enemy_group4': [load_image('enemy41.png'), load_image('enemy42.png'), load_image('enemy43.png')],
         'traps1': [load_image('trap11.png'), load_image('trap12.png'), load_image('trap13.png')],
         'traps2': [load_image('trap21.png'), load_image('trap22.png'), load_image('trap23.png')]
     }
@@ -187,17 +223,16 @@ class Entity_tile(pygame.sprite.Sprite):
             super().__init__(entity_image_group, entity_group, all_sprites_group)
             entity_image = Entity_tile.basic_entitys_textures[tile_type]
             self.image = entity_image if not isinstance(entity_image, list) else entity_image[randint(0, len(entity_image) - 1)]
-            self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - entity_image.get_rect().width * 0.5),
-                                                   int(tile_height * (pos_y + 1) - entity_image.get_rect().height))
+            self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - self.image.get_rect().width * 0.5),
+                                                   int(tile_height * (pos_y + 1) - self.image.get_rect().height))
 
     def __init__(self, tile_type: str, size_collision: list, pos_x: str, pos_y: str):
         '''загрузка модельки и тектуры, отдельно'''
-        try:
-            tile_type = FILE_TRANSLATOR[tile_type]
-        except pygame.error as message:
-            if tile_type not in FILE_TRANSLATOR.keys():
-                print('level file is broken')
-                raise SystemExit(message)
+        tile_type = tile_type_translat(tile_type)
+        self.make_model(tile_type, size_collision, pos_x, pos_y)
+
+    def make_model(self, tile_type, size_collision, pos_x, pos_y):
+        '''загружает текстуру и модельку объекта'''
         self.entity_image = self.Entity_image(tile_type, pos_x, pos_y)
         super().__init__(entity_group, all_sprites_group)
         Spase_tile('floor', pos_x, pos_y)
@@ -206,17 +241,25 @@ class Entity_tile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - self.image.get_rect().width * 0.5),
                                                int(tile_height * (pos_y + 1 - self.image.get_rect().height * 0.3) - self.image.get_rect().height))
 
-    def update(self, tick, *args, **kwargs):
-        key = args[0]
-        move = (0, 0)
-        if key[pygame.K_UP]:
-            move = (0, -int(speed_up * tick + 1))
-        if key[pygame.K_DOWN]:
-            move = (0, +int(speed_down * tick + 1))
-        if key[pygame.K_LEFT]:
-            move = (-int(speed_left * tick + 1), 0)
-        if key[pygame.K_RIGHT]:
-            move = (+int(speed_right * tick + 1), 0)
+
+class Pleyer_group_tile(Entity_tile):
+    '''класс реализующий игрока'''
+    def __init__(self, tile_type: str, size_collision: list, pos_x: str, pos_y: str):
+        tile_type = tile_type_translat(tile_type)
+        self.make_model(tile_type, size_collision, pos_x, pos_y)
+        player_group.add(self)
+
+    def update(self, tick, keys):
+        '''перемещение игрока'''
+        move = [0, 0]
+        if keys[pygame.K_UP]:
+            move[1] -= int(player_speed * tick + 1) // (sum(keys) + 1)**0.5
+        if keys[pygame.K_DOWN]:
+            move[1] += int(player_speed * tick + 1) // (sum(keys) + 1)**0.5
+        if keys[pygame.K_LEFT]:
+            move[0] -= int(player_speed * tick + 1) // (sum(keys) + 1)**0.5
+        if keys[pygame.K_RIGHT]:
+            move[0] += int(player_speed * tick + 1) // (sum(keys) + 1)**0.5
         self.rect = self.rect.move(*move)
         self.entity_image.rect = self.entity_image.rect.move(*move)
         if pygame.sprite.spritecollideany(self, walls_group):
@@ -224,13 +267,42 @@ class Entity_tile(pygame.sprite.Sprite):
             self.rect = self.rect.move(*move)
             self.entity_image.rect = self.entity_image.rect.move(*move)
 
+class Enemy_group1_tile(Entity_tile):
+    '''класс реализующий 1 группу врагов'''
+    def __init__(self, tile_type, size_collision, pos_x, pos_y):
+        tile_type = tile_type_translat(tile_type)
+        self.make_model(tile_type, size_collision, pos_x, pos_y)
+        enemy_group.add(self.entity_image, self)
+        enemy_image_group.add(self.entity_image)
 
-#
-# def entity_tile_group(tile_tipe: str, x: str, y: str) -> None:
-#     if FILE_TRANSLATOR[tile_tipe] == 'enemy_group1': Enemy_group1_tile(x, y)
-#     elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group2': Enemy_group2_tile(x, y)
-#     elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group3': Enemy_group3_tile(x, y)
-#     elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group4': Enemy_group4_tile(x, y)
+    def update(self, tick):
+        '''передвижение врагов, работает хреново'''
+        player = player_group.sprites()[0]
+        pos_player_center = (player.rect.x + player.rect.width * 0.5, player.rect.y + player.rect.height * 0.5)
+        pos_enemy_center = (self.rect.x + self.rect.width * 0.5, self.rect.y + self.rect.height * 0.5)
+        pos_delta = (pos_player_center[0] - pos_enemy_center[0], pos_player_center[1] - pos_enemy_center[1])
+        distance = ((pos_delta[0])**2 + (pos_delta[1])**2)**0.5
+        try:
+            pos_delta = (pos_delta[0]/distance, pos_delta[1]/distance)
+            move = (int(tick * enemy_speed + 1) * pos_delta[0], int(tick * enemy_speed + 1) * pos_delta[1])
+            if distance <= 15: print('connect')
+            self.rect = self.rect.move(*move)
+            self.entity_image.rect = self.entity_image.rect.move(*move)
+        except ZeroDivisionError:
+            print('connect')
+        except pygame.error as message:
+            print('position error')
+            raise SystemExit(message)
+
+
+def enemy_tile_group(tile_tipe: str, x: str, y: str) -> None:
+    '''подберает нужний класс врага'''
+    value = tile_type_translat(tile_tipe)
+    size_collision = SIZE_COLLISION[value]
+    if value == 'enemy_group1': Enemy_group1_tile(tile_tipe, size_collision, x, y)
+    # elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group2': Enemy_group2_tile(x, y)
+    # elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group3': Enemy_group3_tile(x, y)
+    # elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group4': Enemy_group4_tile(x, y)
 
 
 class Camera:
@@ -255,7 +327,8 @@ if __name__ == '__main__':
     FPS = 50
     FOV = (10, 10)
     tile_width = tile_height = 80
-    speed_up = speed_down = speed_left = speed_right = 180
+    player_speed = 180
+    enemy_speed = 80
 
     pygame.key.set_repeat(1, 50)
 
@@ -265,7 +338,9 @@ if __name__ == '__main__':
     entity_image_group = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
     enemy_group = pygame.sprite.Group()
+    enemy_image_group = pygame.sprite.Group()
     spase_group = pygame.sprite.Group()
+    decor_group = pygame.sprite.Group()
     walls_group = pygame.sprite.Group()
     walls_group_up = pygame.sprite.Group()
     walls_group_down = pygame.sprite.Group()
@@ -282,17 +357,24 @@ if __name__ == '__main__':
     screen = pygame.Surface(size_screen)
     screen2 = pygame.Surface(size_screen)
     map = pygame.Surface(size_screen)
+
+    level_render(loaded_level[0])
+    spase_group.draw(map)
+    decor_group.draw(map)
+
     clock = pygame.time.Clock()
     running = True
     start_screen()
-    level_render(loaded_level[0])
-    spase_group.draw(map)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.KEYDOWN:
-                entity_group.update(clock.get_time() / 1000, pygame.key.get_pressed())
+
+        keys = pygame.key.get_pressed()
+        if any([keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT], keys[pygame.K_RIGHT]]):
+            player_group.update(clock.get_time() / 1000, keys)
+        enemy_group.update(clock.get_time() / 1000)
+
         display.fill(pygame.Color("black"))
         screen.blit(map, (0, 0))
 
