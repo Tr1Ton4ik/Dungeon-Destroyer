@@ -497,8 +497,6 @@ if __name__ == '__main__':
 
         display.fill(pygame.Color("black"))
         screen.blit(map, (0, 0))
-        bullets_group.draw(screen)
-        bullets_group.update()
         entity_group.draw(screen)
         walls_group_down.draw(screen)
         display.blit(screen, (0, 0))
