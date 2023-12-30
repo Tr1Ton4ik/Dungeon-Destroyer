@@ -720,8 +720,6 @@ if __name__ == '__main__':
         enemy_group.update(clock.get_time() / 1000)
 
         screen.blit(map, (0, 0))
-        bullets_group.draw(screen)
-        bullets_group.update()
         entity_group.draw(screen)
         walls_group_down.draw(screen)
         weapon_group.draw(screen)
