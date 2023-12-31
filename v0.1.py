@@ -142,7 +142,7 @@ def level_render(text_level: list) -> list:
             elif value == 'player':
                 '''рендер игрока'''
                 size_collision = SIZE_COLLISION[value]
-                Pleyer_group_tile(text_level[y][x], size_collision, x, y)
+                Musketeer(text_level[y][x], size_collision, x, y)
             elif value in Enemy_group1_tile.basic_entitys_textures.keys():
                 '''рендер врагов'''
                 enemy_tile_group(text_level[y][x], x, y)
@@ -342,6 +342,9 @@ class Pleyer_group_tile(Entity_tile):
             self.rect = self.rect.move(*move)
             self.entity_image.rect = self.entity_image.rect.move(*move)
 
+    def attack(self, mouse_x, mouse_y, damage):
+        pass
+
 
 class Enemy_group1_tile(Entity_tile):
     '''класс реализующий 1 группу врагов'''
@@ -406,7 +409,12 @@ class Camera:
 
 class Musketeer(Pleyer_group_tile):
     '''Класс мушкетера за которого можно играть'''
-    pass
+
+    def __init__(self, tile_type, size_collision, pos_x, pos_y):
+        super().__init__(tile_type, size_collision, pos_x, pos_y)
+
+    def attack(self, mouse_x, mouse_y, damage):
+        Bullet(mouse_x, mouse_y, damage)
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -487,7 +495,7 @@ if __name__ == '__main__':
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed(num_buttons=3)[0]:
-                    player_group.sprites()[0].attack()
+                    player_group.sprites()[0].attack(*pygame.mouse.get_pos(), 0)
 
         keys = pygame.key.get_pressed()
         if any([keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT],
@@ -497,6 +505,8 @@ if __name__ == '__main__':
 
         display.fill(pygame.Color("black"))
         screen.blit(map, (0, 0))
+        bullets_group.draw(screen)
+        bullets_group.update()
         entity_group.draw(screen)
         walls_group_down.draw(screen)
         display.blit(screen, (0, 0))
