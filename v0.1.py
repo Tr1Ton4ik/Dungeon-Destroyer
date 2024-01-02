@@ -244,6 +244,7 @@ class Entity_tile(pygame.sprite.Sprite):
 
 class Pleyer_group_tile(Entity_tile):
     '''класс реализующий игрока'''
+    move = [0, 0]
     def __init__(self, tile_type: str, size_collision: list, pos_x: str, pos_y: str):
         tile_type = tile_type_translat(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y)
@@ -251,15 +252,16 @@ class Pleyer_group_tile(Entity_tile):
 
     def update(self, tick, keys):
         '''перемещение игрока'''
-        move = [0, 0]
         if keys[pygame.K_UP]:
-            move[1] -= int(player_speed * tick + 1) // (sum(keys) + 1)**0.5
+            self.move[1] -= int(player_speed * tick + 1) / ((sum(keys) + 1) % 2 + 1)**0.5
         if keys[pygame.K_DOWN]:
-            move[1] += int(player_speed * tick + 1) // (sum(keys) + 1)**0.5
+            self.move[1] += int(player_speed * tick + 1) / ((sum(keys) + 1) % 2 + 1)**0.5
         if keys[pygame.K_LEFT]:
-            move[0] -= int(player_speed * tick + 1) // (sum(keys) + 1)**0.5
+            self.move[0] -= int(player_speed * tick + 1) / ((sum(keys) + 1) % 2 + 1)**0.5
         if keys[pygame.K_RIGHT]:
-            move[0] += int(player_speed * tick + 1) // (sum(keys) + 1)**0.5
+            self.move[0] += int(player_speed * tick + 1) / ((sum(keys) + 1) % 2 + 1)**0.5
+        move = [int(self.move[0]), int(self.move[1])]
+        self.move = [self.move[0] - move[0], self.move[1] - move[1]]
         self.rect = self.rect.move(*move)
         self.entity_image.rect = self.entity_image.rect.move(*move)
         if pygame.sprite.spritecollideany(self, walls_group):
@@ -269,6 +271,8 @@ class Pleyer_group_tile(Entity_tile):
 
 class Enemy_group1_tile(Entity_tile):
     '''класс реализующий 1 группу врагов'''
+    move = (0, 0)
+
     def __init__(self, tile_type, size_collision, pos_x, pos_y):
         tile_type = tile_type_translat(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y)
@@ -283,11 +287,15 @@ class Enemy_group1_tile(Entity_tile):
         pos_delta = (pos_player_center[0] - pos_enemy_center[0], pos_player_center[1] - pos_enemy_center[1])
         distance = ((pos_delta[0])**2 + (pos_delta[1])**2)**0.5
         try:
-            pos_delta = (pos_delta[0]/distance, pos_delta[1]/distance)
-            move = (int(tick * enemy_speed + 1) * pos_delta[0], int(tick * enemy_speed + 1) * pos_delta[1])
-            if distance <= 15: print('connect')
+            pos_delta = (pos_delta[0]/distance * tick * enemy_speed, pos_delta[1]/distance * tick * enemy_speed)
+
+            self.move = (self.move[0] + pos_delta[0], self.move[1] + pos_delta[1])
+            move = (int(self.move[0]), int(self.move[1]))
+            self.move = (self.move[0] - move[0], self.move[1] - move[1])
+
             self.rect = self.rect.move(*move)
             self.entity_image.rect = self.entity_image.rect.move(*move)
+            if distance <= 15: print('connect')
         except ZeroDivisionError:
             print('connect')
         except pygame.error as message:
@@ -365,6 +373,7 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
     running = True
     start_screen()
+    time = 0.05
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -372,8 +381,8 @@ if __name__ == '__main__':
 
         keys = pygame.key.get_pressed()
         if any([keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT], keys[pygame.K_RIGHT]]):
-            player_group.update(clock.get_time() / 1000, keys)
-        enemy_group.update(clock.get_time() / 1000)
+            player_group.update(time, keys)
+        enemy_group.update(time)
 
         display.fill(pygame.Color("black"))
         screen.blit(map, (0, 0))
@@ -383,4 +392,5 @@ if __name__ == '__main__':
         display.blit(screen, (0, 0))
         pygame.display.flip()
         clock.tick(FPS)
+        time = clock.get_time() / 1000
     terminate()
