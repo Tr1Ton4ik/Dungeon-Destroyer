@@ -454,7 +454,6 @@ if __name__ == '__main__':
 
     pygame.key.set_repeat(1, 50)
 
-    pygame.sprite.Sprite()
     all_sprites_group = pygame.sprite.Group()
     entity_group = pygame.sprite.Group()
     entity_image_group = pygame.sprite.Group()
@@ -486,8 +485,11 @@ if __name__ == '__main__':
     spase_group.draw(map)
     decor_group.draw(map)
 
+    ShootingEvent = pygame.USEREVENT + 1
+
     clock = pygame.time.Clock()
     running = True
+    shooting = True
     start_screen()
     while running:
         for event in pygame.event.get():
@@ -495,7 +497,14 @@ if __name__ == '__main__':
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed(num_buttons=3)[0]:
-                    player_group.sprites()[0].attack(*pygame.mouse.get_pos(), 0)
+                    if shooting:
+                        pygame.time.set_timer(ShootingEvent, 250)
+                        shooting = False
+                    elif not shooting:
+                        pygame.time.set_timer(ShootingEvent, 0)
+                        shooting = True
+            if event.type == ShootingEvent:
+                player_group.sprites()[0].attack(*pygame.mouse.get_pos(), 0)
 
         keys = pygame.key.get_pressed()
         if any([keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT],
