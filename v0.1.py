@@ -148,33 +148,71 @@ def level_render(text_level: list) -> list:
                 enemy_tile_group(text_level[y][x], x, y)
 
 
-def start_screen() -> None:
-    '''стартовое окно'''
-    intro_text = ["ЗАСТАВКА",
-                  "Правила игры",
-                  "Если в правилах несколько строк,",
-                  "приходится выводить их построчно"]
+class ScreenButton:
+    def __init__(self, x, y, width, height, text, image_path,
+                 hover_image_path=None, sound_path=None):
+        self.x, self.y, self.width, self.height, self.text = (x, y, width,
+                                                              height, text)
+        # загружаю картинку кнопки
+        self.image = pygame.image.load(image_path)
+        self.image = pygame.transform.scale(self.image, (width, height))
+        # Загружаю подсветку при наведении
+        self.hover_image = self.image
+        if hover_image_path:
+            self.hover_image = pygame.image.load(hover_image_path)
+            self.hover_image = pygame.transform.scale(self.hover_image,
+                                                      (width, height))
 
-    fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
-    display.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 30)
-    text_coord = 10
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('green'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 2
-        intro_rect.y = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        display.blit(string_rendered, intro_rect)
-    while True:
+        self.rect = self.image.get_rect(topleft=(x, y))
+        # Загружаю звук нажатия
+        self.sound = None
+        if sound_path:
+            self.sound = pygame.mixer.Sound(sound_path)
+        self.is_hovered = False
+
+    def draw(self, screen):
+        current_image = self.hover_image if self.is_hovered else self.image
+        screen.blit(current_image, self.rect.topleft)
+
+        font = pygame.font.Font(None, 36)
+        text_surface = font.render(self.text, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=self.rect.center)
+        screen.blit(text_surface, text_rect)
+
+    def check_hover(self, mouse_pos):
+        self.is_hovered = self.rect.collidepoint(mouse_pos)
+
+    def handle_event(self, event):
+        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and
+                self.is_hovered):
+            if self.sound:
+                self.sound.play()
+            STARTGAMEEVENT = pygame.USEREVENT + 2
+            pygame.event.post(
+                pygame.event.Event(STARTGAMEEVENT, button=self))
+
+
+def start_screen() -> None:
+    pygame.init()
+
+    running_start_screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+    button = ScreenButton(WIDTH // 2 - 50, 100, 200, 100, '',
+                          'data/button.png', 'data/button_hover.png',
+                          'data/click.mp3')
+
+    while running_start_screen:
+        running_start_screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                terminate()
-            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
+                running_start_screen = False
+                pygame.quit()
+            if event.type == StartGameEvent:
+                return
+            button.handle_event(event)
+        button.check_hover(pygame.mouse.get_pos())
+        button.draw(running_start_screen)
         pygame.display.flip()
-        clock.tick(FPS)
 
 
 def terminate() -> None:
@@ -478,7 +516,6 @@ if __name__ == '__main__':
 
     display = pygame.display.set_mode(size_display)
     screen = pygame.Surface(size_screen)
-    screen2 = pygame.Surface(size_screen)
     map = pygame.Surface(size_screen)
 
     level_render(loaded_level[0])
@@ -486,6 +523,7 @@ if __name__ == '__main__':
     decor_group.draw(map)
 
     ShootingEvent = pygame.USEREVENT + 1
+    StartGameEvent = pygame.USEREVENT + 2
 
     clock = pygame.time.Clock()
     running = True
@@ -505,7 +543,6 @@ if __name__ == '__main__':
                         shooting = True
             if event.type == ShootingEvent:
                 player_group.sprites()[0].attack(*pygame.mouse.get_pos(), 0)
-
         keys = pygame.key.get_pressed()
         if any([keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT],
                 keys[pygame.K_RIGHT]]):
