@@ -148,7 +148,7 @@ def level_render(text_level: list) -> list:
                 enemy_tile_group(text_level[y][x], x, y)
 
 
-class ScreenButton:
+class MenuButton:
     def __init__(self, x, y, width, height, text, image_path,
                  hover_image_path=None, sound_path=None):
         self.x, self.y, self.width, self.height, self.text = (x, y, width,
@@ -156,12 +156,14 @@ class ScreenButton:
         # загружаю картинку кнопки
         self.image = pygame.image.load(image_path)
         self.image = pygame.transform.scale(self.image, (width, height))
+        self.image.convert_alpha()
         # Загружаю подсветку при наведении
         self.hover_image = self.image
         if hover_image_path:
             self.hover_image = pygame.image.load(hover_image_path)
             self.hover_image = pygame.transform.scale(self.hover_image,
                                                       (width, height))
+        self.hover_image.convert_alpha()
 
         self.rect = self.image.get_rect(topleft=(x, y))
         # Загружаю звук нажатия
@@ -197,12 +199,13 @@ def start_screen() -> None:
 
     running_start_screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
-    button = ScreenButton(WIDTH // 2 - 50, 100, 200, 100, '',
-                          'data/button.png', 'data/button_hover.png',
-                          'data/click.mp3')
-
+    button = MenuButton(WIDTH // 2 - 50, 100, 200, 100, '',
+                        'data/button.png', 'data/button_hover.png',
+                        'data/click.mp3')
+    fon = pygame.transform.scale(load_image('fon.png'),
+                                 (800, 800))
+    running_start_screen.blit(fon, (0, 0))
     while running_start_screen:
-        running_start_screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running_start_screen = False
