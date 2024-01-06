@@ -37,6 +37,9 @@ SIZE_COLLISION = {  # константа размеров модельки иг�
     'traps1': (30, 1),
     'traps2': (30, 1),
 }
+ShootingEvent = pygame.USEREVENT + 1
+StartLevel1 = pygame.USEREVENT + 2
+BackEvent = pygame.USEREVENT + 3
 
 
 def load_image_data(name: str, color_key=None):
@@ -135,7 +138,7 @@ def level_render(text_level: list) -> list:
     '''прогружает открытый уровень'''
     for y in range(len(text_level)):
         for x in range(len(text_level[y])):
-            value = tile_type_translat(text_level[y][x])
+            value = tile_type_translate(text_level[y][x])
             if value in Spase_tile.basic_spase_textures.keys():
                 '''рендер карты'''
                 Spase_tile(text_level[y][x], x, y)
@@ -148,22 +151,20 @@ def level_render(text_level: list) -> list:
                 enemy_tile_group(text_level[y][x], x, y)
 
 
-class MenuButton:
+class ScreenButton:
     def __init__(self, x, y, width, height, text, image_path,
                  hover_image_path=None, sound_path=None):
         self.x, self.y, self.width, self.height, self.text = (x, y, width,
                                                               height, text)
         # загружаю картинку кнопки
-        self.image = pygame.image.load(image_path)
+        self.image = load_image_data('button.png', -1)
         self.image = pygame.transform.scale(self.image, (width, height))
-        self.image.convert_alpha()
         # Загружаю подсветку при наведении
         self.hover_image = self.image
         if hover_image_path:
-            self.hover_image = pygame.image.load(hover_image_path)
+            self.hover_image = load_image_data('button_hover.png', -1)
             self.hover_image = pygame.transform.scale(self.hover_image,
                                                       (width, height))
-        self.hover_image.convert_alpha()
 
         self.rect = self.image.get_rect(topleft=(x, y))
         # Загружаю звук нажатия
@@ -184,37 +185,70 @@ class MenuButton:
     def check_hover(self, mouse_pos):
         self.is_hovered = self.rect.collidepoint(mouse_pos)
 
-    def handle_event(self, event):
+    def handle_event(self, event, UserEvent):
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and
                 self.is_hovered):
             if self.sound:
                 self.sound.play()
-            STARTGAMEEVENT = pygame.USEREVENT + 2
             pygame.event.post(
-                pygame.event.Event(STARTGAMEEVENT, button=self))
+                pygame.event.Event(UserEvent, button=self))
 
 
 def start_screen() -> None:
     pygame.init()
 
     running_start_screen = pygame.display.set_mode((WIDTH, HEIGHT))
-
-    button = MenuButton(WIDTH // 2 - 50, 100, 200, 100, '',
-                        'data/button.png', 'data/button_hover.png',
-                        'data/click.mp3')
-    fon = pygame.transform.scale(load_image('fon.png'),
-                                 (800, 800))
+    running = True
+    button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, 'Играть',
+                          'data/button.png', 'data/button_hover.png',
+                          'data/click.mp3')
+    fon = pygame.transform.scale(load_image_data('start_screen.png'),
+                                 (800, 800), )
     running_start_screen.blit(fon, (0, 0))
-    while running_start_screen:
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running_start_screen = False
+                running = False
                 pygame.quit()
-            if event.type == StartGameEvent:
-                return
-            button.handle_event(event)
+            if event.type == StartLevel1:
+                running = False
+                choose_level()
+            button.handle_event(event, StartLevel1)
         button.check_hover(pygame.mouse.get_pos())
         button.draw(running_start_screen)
+        pygame.display.flip()
+
+
+def choose_level():
+    pygame.init()
+    choose_level_screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    running = True
+    button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, '1 уровень',
+                          'data/button.png', 'data/button_hover.png',
+                          'data/click.mp3')
+    back_button = ScreenButton(0, 0, 100, 100, 'Назад',
+                               'data/button.png', 'data/button_hover.png',
+                               'data/click.mp3')
+    # fon = pygame.transform.scale(load_image_data('start_screen.png'),
+    #                              (800, 800), )
+    # running_start_screen.blit(fon, (0, 0))
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+            if event.type == StartGameEvent:
+                running = False
+                return
+            if event.type == BackEvent:
+                running = False
+                start_screen()
+            button.handle_event(event, StartLevel1)
+            back_button.handle_event(event, BackEvent)
+        back_button.draw(choose_level_screen)
+        back_button.check_hover(pygame.mouse.get_pos())
+        button.check_hover(pygame.mouse.get_pos())
+        button.draw(choose_level_screen)
         pygame.display.flip()
 
 
@@ -224,7 +258,7 @@ def terminate() -> None:
     sys.exit()
 
 
-def tile_type_translat(tile_type):
+def tile_type_translate(tile_type):
     '''переводит значение из файла в текстовое'''
     try:
         tile_type = FILE_TRANSLATOR[tile_type]
@@ -258,7 +292,7 @@ class Spase_tile(pygame.sprite.Sprite):
 
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(spase_group, all_sprites_group)
-        tile_type = tile_type_translat(tile_type)
+        tile_type = tile_type_translate(tile_type)
         self.add_group(tile_type, pos_x, pos_y)
         self.make_texture(tile_type, pos_x, pos_y)
 
@@ -336,7 +370,7 @@ class Entity_tile(pygame.sprite.Sprite):
     def __init__(self, tile_type: str, size_collision: list, pos_x: str,
                  pos_y: str):
         '''загрузка модельки и тектуры, отдельно'''
-        tile_type = tile_type_translat(tile_type)
+        tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y)
 
     def make_model(self, tile_type, size_collision, pos_x, pos_y):
@@ -361,7 +395,7 @@ class Pleyer_group_tile(Entity_tile):
 
     def __init__(self, tile_type: str, size_collision: list, pos_x: str,
                  pos_y: str):
-        tile_type = tile_type_translat(tile_type)
+        tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y)
         player_group.add(self)
 
@@ -391,7 +425,7 @@ class Enemy_group1_tile(Entity_tile):
     '''класс реализующий 1 группу врагов'''
 
     def __init__(self, tile_type, size_collision, pos_x, pos_y):
-        tile_type = tile_type_translat(tile_type)
+        tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y)
         enemy_group.add(self.entity_image, self)
         enemy_image_group.add(self.entity_image)
@@ -422,7 +456,7 @@ class Enemy_group1_tile(Entity_tile):
 
 def enemy_tile_group(tile_tipe: str, x: str, y: str) -> None:
     '''подберает нужний класс врага'''
-    value = tile_type_translat(tile_tipe)
+    value = tile_type_translate(tile_tipe)
     size_collision = SIZE_COLLISION[value]
     if value == 'enemy_group1': Enemy_group1_tile(tile_tipe, size_collision, x,
                                                   y)
@@ -521,6 +555,10 @@ if __name__ == '__main__':
     screen = pygame.Surface(size_screen)
     map = pygame.Surface(size_screen)
 
+    back_button = ScreenButton(0, 0, 100, 100, 'Назад',
+                               'data/button.png', 'data/button_hover.png',
+                               'data/click.mp3')
+
     level_render(loaded_level[0])
     spase_group.draw(map)
     decor_group.draw(map)
@@ -546,6 +584,9 @@ if __name__ == '__main__':
                         shooting = True
             if event.type == ShootingEvent:
                 player_group.sprites()[0].attack(*pygame.mouse.get_pos(), 0)
+            if event.type == BackEvent:
+                choose_level()
+            back_button.handle_event(event, BackEvent)
         keys = pygame.key.get_pressed()
         if any([keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT],
                 keys[pygame.K_RIGHT]]):
@@ -558,6 +599,8 @@ if __name__ == '__main__':
         bullets_group.update()
         entity_group.draw(screen)
         walls_group_down.draw(screen)
+        back_button.draw(screen)
+        back_button.check_hover(pygame.mouse.get_pos())
         display.blit(screen, (0, 0))
         pygame.display.flip()
         clock.tick(FPS)
