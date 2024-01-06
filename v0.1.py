@@ -145,10 +145,24 @@ def level_render(text_level: list) -> list:
             elif value == 'player':
                 '''рендер игрока'''
                 size_collision = SIZE_COLLISION[value]
-                Musketeer(text_level[y][x], size_collision, x, y)
+                Musketeer(text_level[y][x], size_collision, x, y, 100)
             elif value in Enemy_group1_tile.basic_entitys_textures.keys():
                 '''рендер врагов'''
                 enemy_tile_group(text_level[y][x], x, y)
+
+
+class HealthBar:
+    def __init__(self, screen, x, y, width, height):
+        self.x, self.y, self.width, self.height, self.screen = (x, y, width,
+                                                                height, screen)
+
+    def draw(self):
+        draw = pygame.draw.rect
+        player = player_group.sprites()[0]
+        ratio = player.hp / player.max_hp
+        draw(screen, 'red', (self.x, self.y, self.width, self.height))
+        draw(screen, 'green',
+             (self.x, self.y, self.width * ratio, self.height))
 
 
 class ScreenButton:
@@ -368,10 +382,12 @@ class Entity_tile(pygame.sprite.Sprite):
                                                            pos_y + 1) - self.image.get_rect().height))
 
     def __init__(self, tile_type: str, size_collision: list, pos_x: str,
-                 pos_y: str):
+                 pos_y: str, max_hp: int):
         '''загрузка модельки и тектуры, отдельно'''
         tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y)
+        self.max_hp = max_hp
+        self.hp = max_hp
 
     def make_model(self, tile_type, size_collision, pos_x, pos_y):
         '''загружает текстуру и модельку объекта'''
@@ -394,7 +410,9 @@ class Pleyer_group_tile(Entity_tile):
     '''класс реализующий игрока'''
 
     def __init__(self, tile_type: str, size_collision: list, pos_x: str,
-                 pos_y: str):
+                 pos_y: str, max_hp: int):
+        self.max_hp = max_hp
+        self.hp = max_hp
         tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y)
         player_group.add(self)
@@ -485,8 +503,8 @@ class Camera:
 class Musketeer(Pleyer_group_tile):
     '''Класс мушкетера за которого можно играть'''
 
-    def __init__(self, tile_type, size_collision, pos_x, pos_y):
-        super().__init__(tile_type, size_collision, pos_x, pos_y)
+    def __init__(self, tile_type, size_collision, pos_x, pos_y,max_hp):
+        super().__init__(tile_type, size_collision, pos_x, pos_y, max_hp)
 
     def attack(self, mouse_x, mouse_y, damage):
         Bullet(mouse_x, mouse_y, damage)
