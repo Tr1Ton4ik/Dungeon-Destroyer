@@ -6,7 +6,7 @@ from random import randint
 from time import sleep
 
 FPS = 60
-FPS_entity_swap = 10
+FPS_entity_swap = 8
 FOV = (10, 10)
 tile_width = tile_height = 80
 player_speed = 180
