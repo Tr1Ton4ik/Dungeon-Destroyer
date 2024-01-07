@@ -12,9 +12,9 @@ screen = pygame.display.set_mode(size)
 
 def start_screen():
     intro_text = ["ЗАСТАВКА", "",
-                  "Заставка A",
+                  "Правила игры",
                   "Если в правилах несколько строк,",
-                  "выводить их построчно"]
+                  "приходится выводить их построчно"]
 
     fon = pygame.transform.scale(load_image('start_screen.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
