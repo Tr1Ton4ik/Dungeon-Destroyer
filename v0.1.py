@@ -503,7 +503,7 @@ class Camera:
 class Musketeer(Pleyer_group_tile):
     '''Класс мушкетера за которого можно играть'''
 
-    def __init__(self, tile_type, size_collision, pos_x, pos_y,max_hp):
+    def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp):
         super().__init__(tile_type, size_collision, pos_x, pos_y, max_hp)
 
     def attack(self, mouse_x, mouse_y, damage):
