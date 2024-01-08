@@ -619,6 +619,7 @@ if __name__ == '__main__':
         walls_group_down.draw(screen)
         back_button.draw(screen)
         back_button.check_hover(pygame.mouse.get_pos())
+        HealthBar
         display.blit(screen, (0, 0))
         pygame.display.flip()
         clock.tick(FPS)
