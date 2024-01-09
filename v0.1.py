@@ -173,7 +173,7 @@ def level_render(text_level: list) -> list:
             elif value == 'player':
                 '''рендер игрока'''
                 size_collision = SIZE_COLLISION[value]
-                Musketeer(text_level[y][x], size_collision, x, y, 100)
+                Musketeer(text_level[y][x], size_collision, x, y)
             elif value in Enemy_group1_tile.basic_entitys_textures.keys():
                 '''рендер врагов'''
                 enemy_tile_group(text_level[y][x], x, y)
@@ -204,7 +204,7 @@ class ScreenButton:
         # Загружаю подсветку при наведении
         self.hover_image = self.image
         if hover_image_path:
-            self.hover_image = load_image_data('button_hover.png', -1)
+            self.hover_image = load_image_data('emptybutton_hover.png', -1)
             self.hover_image = pygame.transform.scale(self.hover_image,
                                                       (width, height))
 
@@ -515,7 +515,7 @@ class Enemy_group1_tile(Entity_tile):
 
     def __init__(self, tile_type, size_collision, pos_x, pos_y):
         self.move = (0, 0)
-        tile_type = tile_type_translat(tile_type)
+        tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y, self.entity_type)
         self.entity_image.hp = 30
         enemy_group.add(self.entity_image, self)
@@ -655,6 +655,9 @@ if __name__ == '__main__':
     decor_free_group.draw(map)
     decor_collision_group.draw(map)
 
+    back_button = ScreenButton(0, 0, 100, 100, 'Назад',
+                               'data/button.png', 'data/button_hover.png',
+                               'data/click.mp3')
 
     ENTITYIMAGESWAP = pygame.USEREVENT + 1
 
@@ -698,7 +701,6 @@ if __name__ == '__main__':
         walls_group_down.draw(screen)
         back_button.draw(screen)
         back_button.check_hover(pygame.mouse.get_pos())
-        HealthBar
         display.blit(screen, (0, 0))
         pygame.display.flip()
         clock.tick(FPS)
