@@ -664,7 +664,9 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
     pygame.time.set_timer(ENTITYIMAGESWAP, int(1000 / FPS_entity_swap))
     running = True
+    shooting = False
     start_screen()
+    time = clock.get_time() / 1000
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -690,7 +692,7 @@ if __name__ == '__main__':
         keys = pygame.key.get_pressed()
         if any([keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT],
                 keys[pygame.K_RIGHT]]):
-            player_group.update(clock.get_time() / 1000, keys)
+            player_group.update(time)
         enemy_group.update(clock.get_time() / 1000)
 
         display.fill(pygame.Color("black"))
