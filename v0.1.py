@@ -134,6 +134,16 @@ def load_image(name: str) -> list:
     return f
 
 
+def cut_sheet(sprite, sheet, columns, rows):
+    sprite.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                              sheet.get_height() // rows)
+    for j in range(rows):
+        for i in range(columns):
+            frame_location = (sprite.rect.w * i, sprite.rect.h * j)
+            sprite.frames.append(sheet.subsurface(pygame.Rect(
+                frame_location, sprite.rect.size)))
+
+
 def level_render(text_level: list) -> list:
     '''прогружает открытый уровень'''
     for y in range(len(text_level)):
