@@ -171,12 +171,12 @@ class ScreenButton:
         self.x, self.y, self.width, self.height, self.text = (x, y, width,
                                                               height, text)
         # загружаю картинку кнопки
-        self.image = load_image_data('button.png', -1)
+        self.image = load_image_data(image_path, -1)
         self.image = pygame.transform.scale(self.image, (width, height))
         # Загружаю подсветку при наведении
         self.hover_image = self.image
         if hover_image_path:
-            self.hover_image = load_image_data('button_hover.png', -1)
+            self.hover_image = load_image_data(hover_image_path, -1)
             self.hover_image = pygame.transform.scale(self.hover_image,
                                                       (width, height))
 
@@ -213,9 +213,6 @@ def start_screen() -> None:
 
     running_start_screen = pygame.display.set_mode((WIDTH, HEIGHT))
     running = True
-    button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, 'Играть',
-                          'data/button.png', 'data/button_hover.png',
-                          'data/click.mp3')
     fon = pygame.transform.scale(load_image_data('start_screen.png'),
                                  (800, 800), )
     running_start_screen.blit(fon, (0, 0))
@@ -237,15 +234,6 @@ def choose_level():
     pygame.init()
     choose_level_screen = pygame.display.set_mode((WIDTH, HEIGHT))
     running = True
-    button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, '1 уровень',
-                          'data/button.png', 'data/button_hover.png',
-                          'data/click.mp3')
-    back_button = ScreenButton(0, 0, 100, 100, 'Назад',
-                               'data/button.png', 'data/button_hover.png',
-                               'data/click.mp3')
-    # fon = pygame.transform.scale(load_image_data('start_screen.png'),
-    #                              (800, 800), )
-    # running_start_screen.blit(fon, (0, 0))
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -573,8 +561,11 @@ if __name__ == '__main__':
     screen = pygame.Surface(size_screen)
     map = pygame.Surface(size_screen)
 
+    button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, '1 уровень',
+                          'button.png', 'button_hover.png',
+                          'data/click.mp3')
     back_button = ScreenButton(0, 0, 100, 100, 'Назад',
-                               'data/button.png', 'data/button_hover.png',
+                               'button.png', 'button_hover.png',
                                'data/click.mp3')
 
     level_render(loaded_level[0])
