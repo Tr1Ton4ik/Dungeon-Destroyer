@@ -542,19 +542,33 @@ class Weapon(pygame.sprite.Sprite):
         x, y = player.x, player.y
         self.rect.x = x
         self.rect.y = y
-        angle = math.degrees(math.atan2(mouse_y - self.rect.y, mouse_x -
-                                        self.rect.x))
-        if angle < 0:
-            angle += 360
-        self.image = pygame.transform.rotate(self.original_image, -angle + 180)
+        self.angle = -1 * math.degrees(math.atan2(mouse_y - self.rect.y,
+                                                  mouse_x -
+                                                  self.rect.x)) + 180
+
+        self.image = pygame.transform.rotate(self.original_image,
+                                             self.angle)
+
+
+class Sword(Weapon):
+    def __init__(self, image, count, damage):
+        super().__init__(image, count, damage)
+
 
 
 class Pistol(Weapon):
+    '''Класс пистолета'''
+
     def __init__(self, image, count, damage):
         super().__init__(image, count, damage)
 
     def attack(self, mouse_x, mouse_y):
-        Bullet(mouse_x, mouse_y, self.damage)
+        change_frames_clock = pygame.time.Clock()
+        print(self.frames)
+        for frame in self.frames[1:]:
+            self.image = pygame.transform.rotate(frame, self.angle)
+            Bullet(mouse_x, mouse_y, self.damage)
+        self.image = pygame.transform.rotate(self.original_image, self.angle)
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -564,7 +578,7 @@ class Bullet(pygame.sprite.Sprite):
         super().__init__(all_sprites_group, bullets_group)
         self.damage = damage
         weapon = player_group.sprites()[0].now_weapon.rect
-        x, y = weapon.x + weapon.w//2, weapon.y + weapon.h//2
+        x, y = weapon.x + weapon.w // 2, weapon.y + weapon.h // 2
         # Нахожу угол траектории полета
         self.angle = math.atan2(mouse_y - y, mouse_x - x)
         self.image = load_image_data('bullet.png')
