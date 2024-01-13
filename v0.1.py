@@ -134,14 +134,16 @@ def load_image(name: str) -> list:
     return f
 
 
-def cut_sheet(sprite, sheet, columns, rows):
-    sprite.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
-                              sheet.get_height() // rows)
+def cut_sheet(sheet: pygame.Surface, columns: int, rows: int):
+    rect = pygame.Rect(0, 0, sheet.get_width() // columns,
+                       sheet.get_height() // rows)
+    frames = []
     for j in range(rows):
         for i in range(columns):
-            frame_location = (sprite.rect.w * i, sprite.rect.h * j)
-            sprite.frames.append(sheet.subsurface(pygame.Rect(
-                frame_location, sprite.rect.size)))
+            frame_location = (rect.w * i, rect.h * j)
+            frames.append(sheet.subsurface(pygame.Rect(
+                frame_location, rect.size)))
+    return frames
 
 
 def level_render(text_level: list) -> list:
@@ -155,8 +157,10 @@ def level_render(text_level: list) -> list:
             elif value == 'player':
                 '''рендер игрока'''
                 size_collision = SIZE_COLLISION[value]
-                Musketeer(text_level[y][x], size_collision, x, y, 100)
-                Weapon(load_image_data('gun.png', -1))
+                Hero(text_level[y][x], size_collision, x, y, 100)
+                player_group.sprites()[0].add_weapons(
+                    [Pistol(load_image_data('pistol.png', -1),
+                            2, 0)])
             elif value in Enemy_group1_tile.basic_entitys_textures.keys():
                 '''рендер врагов'''
                 enemy_tile_group(text_level[y][x], x, y)
@@ -405,7 +409,7 @@ class Entity_tile(pygame.sprite.Sprite):
         pass
 
 
-class Pleyer_group_tile(Entity_tile):
+class Player_group_tile(Entity_tile):
     '''класс реализующий игрока'''
 
     def __init__(self, tile_type: str, size_collision: list, pos_x: str,
@@ -465,7 +469,7 @@ class Enemy_group1_tile(Entity_tile):
             self.rect = self.rect.move(*move)
             self.entity_image.rect = self.entity_image.rect.move(*move)
         except ZeroDivisionError:
-            print('connect')
+            pass
         except pygame.error as message:
             print('position error')
             raise SystemExit(message)
@@ -499,28 +503,58 @@ class Camera:
         self.dy = -(target.rect.y + target.rect.h // 2 - HEIGHT // 2)
 
 
-class Musketeer(Pleyer_group_tile):
+class Hero(Player_group_tile):
     '''Класс мушкетера за которого можно играть'''
 
     def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp):
         super().__init__(tile_type, size_collision, pos_x, pos_y, max_hp)
+        self.weapons = []
+        self.now_weapon = None
 
-    def attack(self, mouse_x, mouse_y, damage):
-        Bullet(mouse_x, mouse_y, damage)
+    def attack(self, mouse_x, mouse_y):
+        self.now_weapon.attack(mouse_x, mouse_y)
+
+    def add_weapons(self, weapons: list):
+        self.weapons += weapons
+        self.now_weapon = self.weapons[0]
 
 
 class Weapon(pygame.sprite.Sprite):
-    def __init__(self, image: pygame.Surface):
+    '''Класс оружия'''
+
+    def __init__(self, image: pygame.Surface, count: int, damage):
         super().__init__(weapon_group, all_sprites_group)
         player = player_group.sprites()[0].rect
         x, y = player.x, player.y
+
+        self.damage = damage
         self.rect = pygame.Rect(x, y, *image.get_size())
         self.image = image
 
+        self.frames = cut_sheet(self.image, count, 1)
+        self.image = self.frames[0]
+        self.original_image = self.image = pygame.transform.scale(self.image,
+                                                                  (30, 30))
+
     def update(self, *args, **kwargs):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
         player = player_group.sprites()[0].rect
         x, y = player.x, player.y
-        self.rect.move(x, y)
+        self.rect.x = x
+        self.rect.y = y
+        angle = math.degrees(math.atan2(mouse_y - self.rect.y, mouse_x -
+                                        self.rect.x))
+        if angle < 0:
+            angle += 360
+        self.image = pygame.transform.rotate(self.original_image, -angle + 180)
+
+
+class Pistol(Weapon):
+    def __init__(self, image, count, damage):
+        super().__init__(image, count, damage)
+
+    def attack(self, mouse_x, mouse_y):
+        Bullet(mouse_x, mouse_y, self.damage)
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -529,9 +563,9 @@ class Bullet(pygame.sprite.Sprite):
     def __init__(self, mouse_x: int, mouse_y: int, damage: int):
         super().__init__(all_sprites_group, bullets_group)
         self.damage = damage
-        player = player_group.sprites()[0].rect
-        x, y = player.x, player.y
-        # Нахожу угл траектории полета
+        weapon = player_group.sprites()[0].now_weapon.rect
+        x, y = weapon.x + weapon.w//2, weapon.y + weapon.h//2
+        # Нахожу угол траектории полета
         self.angle = math.atan2(mouse_y - y, mouse_x - x)
         self.image = load_image_data('bullet.png')
         self.rect = pygame.Rect(x, y,
@@ -618,7 +652,7 @@ if __name__ == '__main__':
                         pygame.time.set_timer(ShootingEvent, 0)
                         shooting = True
             if event.type == ShootingEvent:
-                player_group.sprites()[0].attack(*pygame.mouse.get_pos(), 0)
+                player_group.sprites()[0].attack(*pygame.mouse.get_pos())
             if event.type == BackEvent:
                 choose_level()
             back_button.handle_event(event, BackEvent)
