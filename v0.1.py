@@ -156,6 +156,7 @@ def level_render(text_level: list) -> list:
                 '''рендер игрока'''
                 size_collision = SIZE_COLLISION[value]
                 Musketeer(text_level[y][x], size_collision, x, y, 100)
+                Weapon(load_image_data('gun.png', -1))
             elif value in Enemy_group1_tile.basic_entitys_textures.keys():
                 '''рендер врагов'''
                 enemy_tile_group(text_level[y][x], x, y)
@@ -433,7 +434,7 @@ class Pleyer_group_tile(Entity_tile):
             self.rect = self.rect.move(*move)
             self.entity_image.rect = self.entity_image.rect.move(*move)
 
-    def attack(self, mouse_x, mouse_y, damage):
+    def attack(self):
         pass
 
 
@@ -508,6 +509,20 @@ class Musketeer(Pleyer_group_tile):
         Bullet(mouse_x, mouse_y, damage)
 
 
+class Weapon(pygame.sprite.Sprite):
+    def __init__(self, image: pygame.Surface):
+        super().__init__(weapon_group, all_sprites_group)
+        player = player_group.sprites()[0].rect
+        x, y = player.x, player.y
+        self.rect = pygame.Rect(x, y, *image.get_size())
+        self.image = image
+
+    def update(self, *args, **kwargs):
+        player = player_group.sprites()[0].rect
+        x, y = player.x, player.y
+        self.rect.move(x, y)
+
+
 class Bullet(pygame.sprite.Sprite):
     '''Класс пули'''
 
@@ -560,6 +575,7 @@ if __name__ == '__main__':
     walls_group_right = pygame.sprite.Group()
     void_spase_group = pygame.sprite.Group()
     bullets_group = pygame.sprite.Group()
+    weapon_group = pygame.sprite.Group()
 
     loaded_level = load_level('level_test1.txt')
 
@@ -610,14 +626,16 @@ if __name__ == '__main__':
         if any([keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT],
                 keys[pygame.K_RIGHT]]):
             player_group.update(clock.get_time() / 1000, keys)
+            weapon_group.update()
         enemy_group.update(clock.get_time() / 1000)
 
-        display.fill(pygame.Color("black"))
         screen.blit(map, (0, 0))
         bullets_group.draw(screen)
         bullets_group.update()
         entity_group.draw(screen)
         walls_group_down.draw(screen)
+        weapon_group.draw(screen)
+        weapon_group.update()
         back_button.draw(screen)
         back_button.check_hover(pygame.mouse.get_pos())
         display.blit(screen, (0, 0))
