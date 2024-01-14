@@ -3,6 +3,7 @@ import os
 import sys
 import pygame
 from random import randint
+from itertools import cycle
 
 FILE_TRANSLATOR = {  # переводит чиловое значение из файла уровня в текст
     '0': 'void',
@@ -37,7 +38,7 @@ SIZE_COLLISION = {  # константа размеров модельки иг�
     'traps1': (30, 1),
     'traps2': (30, 1),
 }
-ShootingEvent = pygame.USEREVENT + 1
+AttackEvent = pygame.USEREVENT + 1
 StartLevel1 = pygame.USEREVENT + 2
 BackEvent = pygame.USEREVENT + 3
 
@@ -160,7 +161,8 @@ def level_render(text_level: list) -> list:
                 Hero(text_level[y][x], size_collision, x, y, 100)
                 player_group.sprites()[0].add_weapons(
                     [Pistol(load_image_data('pistol.png', -1),
-                            2, 0)])
+                            2, 0),
+                     Sword(load_image_data('sword.png', -1), 6, 0)])
             elif value in Enemy_group1_tile.basic_entitys_textures.keys():
                 '''рендер врагов'''
                 enemy_tile_group(text_level[y][x], x, y)
@@ -509,6 +511,7 @@ class Hero(Player_group_tile):
     def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp):
         super().__init__(tile_type, size_collision, pos_x, pos_y, max_hp)
         self.weapons = []
+        self.weapons_cycle = None
         self.now_weapon = None
 
     def attack(self, mouse_x, mouse_y):
@@ -516,14 +519,22 @@ class Hero(Player_group_tile):
 
     def add_weapons(self, weapons: list):
         self.weapons += weapons
-        self.now_weapon = self.weapons[0]
+        self.weapons_cycle = cycle(self.weapons)
+        self.now_weapon = next(self.weapons_cycle)
+        if len(weapon_group.sprites()) == 0:
+            weapon_group.add(self.now_weapon)
+
+    def change_weapon(self):
+        self.now_weapon = next(self.weapons_cycle)
+        weapon_group.sprites()[0].kill()
+        weapon_group.add(self.now_weapon)
 
 
 class Weapon(pygame.sprite.Sprite):
     '''Класс оружия'''
 
     def __init__(self, image: pygame.Surface, count: int, damage):
-        super().__init__(weapon_group, all_sprites_group)
+        super().__init__(all_sprites_group)
         player = player_group.sprites()[0].rect
         x, y = player.x, player.y
 
@@ -545,17 +556,29 @@ class Weapon(pygame.sprite.Sprite):
         self.angle = -1 * math.degrees(math.atan2(mouse_y - self.rect.y,
                                                   mouse_x -
                                                   self.rect.x)) + 180
-        print(self.angle)
         if 270 >= self.angle >= 90:
-            self.image = pygame.transform.rotate(pygame.transform.flip(self.original_image, flip_x=1, flip_y=0), self.angle-180)
+            self.image = pygame.transform.rotate(
+                pygame.transform.flip(self.original_image, flip_x=1, flip_y=0),
+                self.angle - 180)
         else:
             self.image = pygame.transform.rotate(self.original_image,
                                                  self.angle)
+
+    def attack(self):
+        pass
 
 
 class Sword(Weapon):
     def __init__(self, image, count, damage):
         super().__init__(image, count, damage)
+
+    def attack(self, *args):
+        change_image_clock = pygame.time.Clock()
+        for frame in self.frames[1:]:
+            for _ in range(100):
+                pass
+            self.image = pygame.transform.rotate(frame, self.angle)
+        self.image = pygame.transform.rotate(self.original_image, self.angle)
 
 
 class Pistol(Weapon):
@@ -565,11 +588,8 @@ class Pistol(Weapon):
         super().__init__(image, count, damage)
 
     def attack(self, mouse_x, mouse_y):
-        change_frames_clock = pygame.time.Clock()
-        for frame in self.frames[1:]:
-            self.image = pygame.transform.rotate(frame, self.angle)
-            Bullet(mouse_x, mouse_y, self.damage)
-        self.image = pygame.transform.rotate(self.original_image, self.angle)
+        '''анимация атаки не реализована, я пытался'''
+        Bullet(mouse_x, mouse_y, self.damage)
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -647,12 +667,12 @@ if __name__ == '__main__':
     spase_group.draw(map)
     decor_group.draw(map)
 
-    ShootingEvent = pygame.USEREVENT + 1
+    AttackEvent = pygame.USEREVENT + 1
     StartGameEvent = pygame.USEREVENT + 2
 
     clock = pygame.time.Clock()
     running = True
-    shooting = True
+    attacking = True
     start_screen()
     while running:
         for event in pygame.event.get():
@@ -660,13 +680,17 @@ if __name__ == '__main__':
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed(num_buttons=3)[0]:
-                    if shooting:
-                        pygame.time.set_timer(ShootingEvent, 250)
-                        shooting = False
-                    elif not shooting:
-                        pygame.time.set_timer(ShootingEvent, 0)
-                        shooting = True
-            if event.type == ShootingEvent:
+                    if attacking:
+                        pygame.time.set_timer(AttackEvent, 250)
+                        attacking = False
+                    elif not attacking:
+                        pygame.time.set_timer(AttackEvent, 0)
+                        attacking = True
+            if event.type == pygame.KEYDOWN:
+                if pygame.key.get_pressed()[pygame.K_e]:
+                    player_group.sprites()[0].change_weapon()
+                    print(1)
+            if event.type == AttackEvent:
                 player_group.sprites()[0].attack(*pygame.mouse.get_pos())
             if event.type == BackEvent:
                 choose_level()
