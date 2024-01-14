@@ -159,10 +159,13 @@ def level_render(text_level: list) -> list:
                 '''рендер игрока'''
                 size_collision = SIZE_COLLISION[value]
                 Hero(text_level[y][x], size_collision, x, y, 100)
-                player_group.sprites()[0].add_weapons(
-                    [Pistol(load_image_data('pistol.png', -1),
-                            2, 0),
-                     Sword(load_image_data('sword.png', -1), 6, 0)])
+                load = load_image_data
+                player_group.sprites()[0].add_weapons([
+                    Pistol(load('pistol.png', -1), load('fire_effect.png', -1),
+                           0),
+                    Sword(load('sword.png', -1), load('sword_effect.png', -1),
+                          0)
+                ])
             elif value in Enemy_group1_tile.basic_entitys_textures.keys():
                 '''рендер врагов'''
                 enemy_tile_group(text_level[y][x], x, y)
@@ -530,10 +533,18 @@ class Hero(Player_group_tile):
         weapon_group.add(self.now_weapon)
 
 
+class Effect(pygame.sprite.Sprite):
+    def __init__(self, image: pygame.Surface, x: int, y: int):
+        super().__init__(all_sprites_group, effects_group)
+        self.image = image
+        self.rect = image.get_rect()
+
+
 class Weapon(pygame.sprite.Sprite):
     '''Класс оружия'''
 
-    def __init__(self, image: pygame.Surface, count: int, damage):
+    def __init__(self, image: pygame.Surface, attack_effect: pygame.Surface,
+                 damage: int):
         super().__init__(all_sprites_group)
         player = player_group.sprites()[0].rect
         x, y = player.x, player.y
@@ -541,9 +552,8 @@ class Weapon(pygame.sprite.Sprite):
         self.damage = damage
         self.rect = pygame.Rect(x, y, *image.get_size())
         self.image = image
-
-        self.frames = cut_sheet(self.image, count, 1)
-        self.image = self.frames[0]
+        self.attack_effect = attack_effect
+        self.original_attack_effect = attack_effect
         self.original_image = self.image = pygame.transform.scale(self.image,
                                                                   (30, 30))
 
@@ -569,23 +579,18 @@ class Weapon(pygame.sprite.Sprite):
 
 
 class Sword(Weapon):
-    def __init__(self, image, count, damage):
-        super().__init__(image, count, damage)
+    def __init__(self, image, effect, damage):
+        super().__init__(image, effect, damage)
 
     def attack(self, *args):
-        change_image_clock = pygame.time.Clock()
-        for frame in self.frames[1:]:
-            for _ in range(100):
-                pass
-            self.image = pygame.transform.rotate(frame, self.angle)
-        self.image = pygame.transform.rotate(self.original_image, self.angle)
+        Effect(self.attack_effect, self.rect.x, self.rect.y)
 
 
 class Pistol(Weapon):
     '''Класс пистолета'''
 
-    def __init__(self, image, count, damage):
-        super().__init__(image, count, damage)
+    def __init__(self, image, effect, damage):
+        super().__init__(image, effect, damage)
 
     def attack(self, mouse_x, mouse_y):
         '''анимация атаки не реализована, я пытался'''
@@ -645,7 +650,7 @@ if __name__ == '__main__':
     void_spase_group = pygame.sprite.Group()
     bullets_group = pygame.sprite.Group()
     weapon_group = pygame.sprite.Group()
-
+    effects_group = pygame.sprite.Group()
     loaded_level = load_level('level_test1.txt')
 
     size_display = WIDTH, HEIGHT = FOV[0] * tile_width, FOV[1] * tile_height
@@ -687,7 +692,8 @@ if __name__ == '__main__':
                         pygame.time.set_timer(AttackEvent, 0)
                         attacking = True
             if event.type == pygame.KEYDOWN:
-                if pygame.key.get_pressed()[pygame.K_e]:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_e]:
                     player_group.sprites()[0].change_weapon()
                     print(1)
             if event.type == AttackEvent:
@@ -709,6 +715,7 @@ if __name__ == '__main__':
         walls_group_down.draw(screen)
         weapon_group.draw(screen)
         weapon_group.update()
+        effects_group.draw(screen)
         back_button.draw(screen)
         back_button.check_hover(pygame.mouse.get_pos())
         display.blit(screen, (0, 0))
