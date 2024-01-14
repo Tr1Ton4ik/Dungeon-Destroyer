@@ -545,15 +545,17 @@ class Weapon(pygame.sprite.Sprite):
         self.angle = -1 * math.degrees(math.atan2(mouse_y - self.rect.y,
                                                   mouse_x -
                                                   self.rect.x)) + 180
-
-        self.image = pygame.transform.rotate(self.original_image,
-                                             self.angle)
+        print(self.angle)
+        if 270 >= self.angle >= 90:
+            self.image = pygame.transform.rotate(pygame.transform.flip(self.original_image, flip_x=1, flip_y=0), self.angle-180)
+        else:
+            self.image = pygame.transform.rotate(self.original_image,
+                                                 self.angle)
 
 
 class Sword(Weapon):
     def __init__(self, image, count, damage):
         super().__init__(image, count, damage)
-
 
 
 class Pistol(Weapon):
@@ -564,7 +566,6 @@ class Pistol(Weapon):
 
     def attack(self, mouse_x, mouse_y):
         change_frames_clock = pygame.time.Clock()
-        print(self.frames)
         for frame in self.frames[1:]:
             self.image = pygame.transform.rotate(frame, self.angle)
             Bullet(mouse_x, mouse_y, self.damage)
