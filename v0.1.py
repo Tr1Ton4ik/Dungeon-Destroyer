@@ -248,9 +248,8 @@ def start_screen() -> None:
     button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, 'Играть',
                           'data/button.png', 'data/button.png',
                           'data/click.mp3')
-    fon = pygame.transform.scale(load_image_data('start_screen.png'),
-                                 (800, 800), )
-    screen.blit(fon, (0, 0))
+    fon = pygame.transform.scale(load_image_data('start_screen.png'), size_display)
+    display.blit(fon, (0, 0))
     while running_start_screen:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -261,8 +260,7 @@ def start_screen() -> None:
                 choose_level()
             button.handle_event(event, StartLevel1)
         button.check_hover(pygame.mouse.get_pos())
-        button.draw(screen)
-        display.blit(screen, (0, 0))
+        button.draw(display)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -275,8 +273,8 @@ def choose_level():
     back_button = ScreenButton(0, 0, 100, 100, 'Назад',
                                'data/button.png', 'data/button.png',
                                'data/click.mp3')
-    # fon = pygame.transform.scale(load_image_data('start_screen.png'), (800, 800), )
-    # running_start_screen.blit(fon, (0, 0))
+    fon = pygame.transform.scale(load_image_data('start_screen.png'), size_display)
+    display.blit(fon, (0, 0))
     while running_choose_level:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -288,13 +286,13 @@ def choose_level():
             if event.type == BackEvent:
                 running_choose_level = False
                 start_screen()
+                main()
             button.handle_event(event, StartLevel1)
             back_button.handle_event(event, BackEvent)
-        back_button.draw(screen)
+        back_button.draw(display)
         back_button.check_hover(pygame.mouse.get_pos())
         button.check_hover(pygame.mouse.get_pos())
-        button.draw(screen)
-        display.blit(screen, (0, 0))
+        button.draw(display)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -615,7 +613,13 @@ class Bullet(pygame.sprite.Sprite):
         if collide(self, walls_group) or collide(self, decor_collision_group):
             self.kill()
 
-if __name__ == '__main__':
+def main():
+    global all_sprites_group, entity_group, entity_image_group, player_group, \
+        player_image_group, enemy_group, enemy_image_group, spase_group, \
+        decor_free_group, decor_collision_group, walls_group, walls_group_up, \
+        walls_group_down, walls_group_left, walls_group_right, void_spase_group, \
+        bullets_group
+
     tile_width = tile_height = 80
     player_speed = 180
     enemy_speed = 80
@@ -659,12 +663,9 @@ if __name__ == '__main__':
     decor_collision_group.draw(map)
 
 
-    clock = pygame.time.Clock()
     pygame.time.set_timer(ENTITYIMAGESWAP, int(1000 / FPS_entity_swap))
     running = True
     shooting = True
-    start_screen()
-
 
     while running:
         for event in pygame.event.get():
@@ -701,3 +702,7 @@ if __name__ == '__main__':
         clock.tick(FPS)
     terminate()
 
+if __name__ == '__main__':
+    clock = pygame.time.Clock()
+    start_screen()
+    main()
