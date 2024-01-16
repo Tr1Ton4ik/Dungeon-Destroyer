@@ -3,7 +3,6 @@ import os
 import sys
 import pygame
 from random import randint
-from itertools import cycle
 
 FPS = 60
 FPS_entity_swap = 8
@@ -64,6 +63,7 @@ StartLevel1 = pygame.USEREVENT + 2
 BackEvent = pygame.USEREVENT + 3
 ENTITYIMAGESWAP = pygame.USEREVENT + 4
 AttackEvent = pygame.USEREVENT + 5
+ChooseLevelEvent = pygame.USEREVENT + 6
 
 
 def load_image_data(name: str, color_key=None):
@@ -270,7 +270,7 @@ class ScreenButton:
 def start_screen() -> None:
     running_start_screen = True
     button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, 'Играть',
-                          'button.png', 'button.png',
+                          'button.png', 'emptybutton_hover.png',
                           'data/click.mp3')
     fon = pygame.transform.scale(load_image_data('start_screen.png'),
                                  size_display)
@@ -280,10 +280,11 @@ def start_screen() -> None:
             if event.type == pygame.QUIT:
                 running_start_screen = False
                 terminate()
-            if event.type == StartLevel1:
+            if event.type == ChooseLevelEvent:
                 running_start_screen = False
                 choose_level()
-            button.handle_event(event, StartLevel1)
+
+            button.handle_event(event, ChooseLevelEvent)
         button.check_hover(pygame.mouse.get_pos())
         button.draw(display)
         pygame.display.flip()
@@ -293,10 +294,10 @@ def start_screen() -> None:
 def choose_level():
     running_choose_level = True
     button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, '1 уровень',
-                          'button.png', 'button.png',
+                          'button.png', 'emptybutton_hover.png',
                           'data/click.mp3')
     back_button = ScreenButton(0, 0, 100, 100, 'Назад',
-                               'button.png', 'button.png',
+                               'button.png', 'emptybutton_hover.png',
                                'data/click.mp3')
     fon = pygame.transform.scale(load_image_data('start_screen.png'),
                                  size_display)
@@ -307,8 +308,7 @@ def choose_level():
                 running_choose_level = False
                 terminate()
             if event.type == StartLevel1:
-                print(3)
-                return
+                main()
             if event.type == BackEvent:
                 running_choose_level = False
                 start_screen()
@@ -794,7 +794,7 @@ def main():
     map = pygame.Surface(size_screen)
 
     back_button = ScreenButton(0, 0, 100, 100, 'Назад',
-                               'button.png', 'button.png',
+                               'button.png', 'emptybutton_hover.png',
                                'data/click.mp3')
 
     level_render(loaded_level[0])
@@ -805,7 +805,6 @@ def main():
     pygame.time.set_timer(ENTITYIMAGESWAP, int(1000 / FPS_entity_swap))
     running = True
     attacking = True
-    start_screen()
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -822,7 +821,6 @@ def main():
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_e]:
                     player_group.sprites()[0].change_weapon()
-                    print(1)
             if event.type == AttackEvent:
                 player_group.sprites()[0].attack(*pygame.mouse.get_pos())
             if event.type == BackEvent:
@@ -854,4 +852,3 @@ def main():
 if __name__ == '__main__':
     clock = pygame.time.Clock()
     start_screen()
-    main()
