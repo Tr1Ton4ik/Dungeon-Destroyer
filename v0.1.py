@@ -644,7 +644,6 @@ if __name__ == '__main__':
     speed_up = speed_down = speed_left = speed_right = 180
     BULLET_SPEED = 10
 
-    pygame.key.set_repeat(1, 50)
 
     all_sprites_group = pygame.sprite.Group()
     entity_group = pygame.sprite.Group()
