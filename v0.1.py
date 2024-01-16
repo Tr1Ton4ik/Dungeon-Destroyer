@@ -319,8 +319,6 @@ def choose_level():
         back_button.check_hover(pygame.mouse.get_pos())
         button.check_hover(pygame.mouse.get_pos())
         button.draw(display)
-        button2.draw(display)
-        button3.draw(display)
         pygame.display.flip()
         clock.tick(FPS)
 
