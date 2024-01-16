@@ -219,8 +219,8 @@ class HealthBar:
         draw = pygame.draw.rect
         player = player_group.sprites()[0]
         ratio = player.hp / player.max_hp
-        draw(screen, 'red', (self.x, self.y, self.width, self.height))
-        draw(screen, 'green',
+        draw(self.screen, 'red', (self.x, self.y, self.width, self.height))
+        draw(self.screen, 'green',
              (self.x, self.y, self.width * ratio, self.height))
 
 
@@ -269,7 +269,7 @@ class ScreenButton:
 
 def start_screen() -> None:
     running_start_screen = True
-    button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, 'Играть',
+    button = ScreenButton(10, 190, 100, 100, 'Играть',
                           'button.png', 'emptybutton_hover.png',
                           'data/click.mp3')
     fon = pygame.transform.scale(load_image_data('start_screen.png'),
@@ -293,10 +293,10 @@ def start_screen() -> None:
 
 def choose_level():
     running_choose_level = True
-    button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, '1 уровень',
+    button = ScreenButton(10, 190, 130, 100, '1 уровень',
                           'button.png', 'emptybutton_hover.png',
                           'data/click.mp3')
-    back_button = ScreenButton(0, 0, 100, 100, 'Назад',
+    back_button = ScreenButton(0, 0, 100, 60, 'Назад',
                                'button.png', 'emptybutton_hover.png',
                                'data/click.mp3')
     fon = pygame.transform.scale(load_image_data('start_screen.png'),
@@ -319,6 +319,8 @@ def choose_level():
         back_button.check_hover(pygame.mouse.get_pos())
         button.check_hover(pygame.mouse.get_pos())
         button.draw(display)
+        button2.draw(display)
+        button3.draw(display)
         pygame.display.flip()
         clock.tick(FPS)
 
