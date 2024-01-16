@@ -63,6 +63,7 @@ ShootingEvent = pygame.USEREVENT + 1
 StartLevel1 = pygame.USEREVENT + 2
 BackEvent = pygame.USEREVENT + 3
 ENTITYIMAGESWAP = pygame.USEREVENT + 4
+AttackEvent = pygame.USEREVENT + 5
 
 
 def load_image_data(name: str, color_key=None):
@@ -124,21 +125,29 @@ def load_image(name: str, actual=False) -> list:
     if name == 'void.png':
         pass
     elif name == 'wall_up.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, h * 0.5, w, h * 0.5))
+        pygame.draw.rect(f, pygame.Color('black'),
+                         pygame.Rect(0, h * 0.5, w, h * 0.5))
     elif name == 'wall_down.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w, h * 0.5))
+        pygame.draw.rect(f, pygame.Color('black'),
+                         pygame.Rect(0, 0, w, h * 0.5))
     elif name == 'wall_left.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, 0, w * 0.5, h))
+        pygame.draw.rect(f, pygame.Color('black'),
+                         pygame.Rect(w * 0.5, 0, w * 0.5, h))
     elif name == 'wall_right.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w * 0.5, h))
+        pygame.draw.rect(f, pygame.Color('black'),
+                         pygame.Rect(0, 0, w * 0.5, h))
     elif name == 'wall_up_left_corner.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, h * 0.5, w * 0.5, h * 0.5))
+        pygame.draw.rect(f, pygame.Color('black'),
+                         pygame.Rect(w * 0.5, h * 0.5, w * 0.5, h * 0.5))
     elif name == 'wall_up_right_corner.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, h * 0.5, w * 0.5, h * 0.5))
+        pygame.draw.rect(f, pygame.Color('black'),
+                         pygame.Rect(0, h * 0.5, w * 0.5, h * 0.5))
     elif name == 'wall_down_left_corner.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, 0, w * 0.5, h * 0.5))
+        pygame.draw.rect(f, pygame.Color('black'),
+                         pygame.Rect(w * 0.5, 0, w * 0.5, h * 0.5))
     elif name == 'wall_down_right_corner.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w * 0.5, h * 0.5))
+        pygame.draw.rect(f, pygame.Color('black'),
+                         pygame.Rect(0, 0, w * 0.5, h * 0.5))
     elif name == 'floor1.png' or name == 'floor2.png' or name == 'floor3.png':
         f.fill(pygame.Color('blue'))
     elif name == 'fon.png':
@@ -152,7 +161,8 @@ def load_image(name: str, actual=False) -> list:
 
     elif name == 'decor_free1.png' or name == 'decor_free2.png' or name == 'decor_free3.png':
         f = pygame.Surface((w, h), pygame.SRCALPHA)
-        pygame.draw.circle(f, pygame.Color('red'), (w * 0.5, h * 0.5), radius=w * 0.3)
+        pygame.draw.circle(f, pygame.Color('red'), (w * 0.5, h * 0.5),
+                           radius=w * 0.3)
 
     elif name == 'decor_collision1.png' or name == 'decor_collision2.png' or name == 'decor_collision3.png':
         f = pygame.Surface((w * 0.5, h * 0.5))
@@ -163,10 +173,12 @@ def load_image(name: str, actual=False) -> list:
         pygame.draw.rect(f, pygame.Color('red'), pygame.Rect(0, 0, 70, 40))
     return f
 
+
 def terminate() -> None:
     '''закрыть окно'''
     pygame.quit()
     sys.exit()
+
 
 def cut_sheet(sheet: pygame.Surface, columns: int, rows: int):
     rect = pygame.Rect(0, 0, sheet.get_width() // columns,
@@ -193,13 +205,6 @@ def level_render(text_level: list) -> list:
                 size_collision = SIZE_COLLISION[value]
                 Hero(text_level[y][x], size_collision, x, y, 100)
                 load = load_image_data
-                player_group.sprites()[0].add_weapon(
-                    Sword(load('sword.png', -1),
-                          load('sword_effect.png', -1),
-                          0))
-                player_group.sprites()[0].add_weapon(
-                    Pistol(load('pistol.png', -1),
-                           load('fire_effect.png', -1), 0))
             elif value in Enemy_group1_tile.basic_entitys_textures.keys():
                 '''рендер врагов'''
                 enemy_tile_group(text_level[y][x], x, y)
@@ -265,9 +270,10 @@ class ScreenButton:
 def start_screen() -> None:
     running_start_screen = True
     button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, 'Играть',
-                          'data/button.png', 'data/button.png',
+                          'button.png', 'button.png',
                           'data/click.mp3')
-    fon = pygame.transform.scale(load_image_data('start_screen.png'), size_display)
+    fon = pygame.transform.scale(load_image_data('start_screen.png'),
+                                 size_display)
     display.blit(fon, (0, 0))
     while running_start_screen:
         for event in pygame.event.get():
@@ -287,12 +293,13 @@ def start_screen() -> None:
 def choose_level():
     running_choose_level = True
     button = ScreenButton(WIDTH // 2 - 50, 100, 100, 100, '1 уровень',
-                          'data/button.png', 'data/button.png',
+                          'button.png', 'button.png',
                           'data/click.mp3')
     back_button = ScreenButton(0, 0, 100, 100, 'Назад',
-                               'data/button.png', 'data/button.png',
+                               'button.png', 'button.png',
                                'data/click.mp3')
-    fon = pygame.transform.scale(load_image_data('start_screen.png'), size_display)
+    fon = pygame.transform.scale(load_image_data('start_screen.png'),
+                                 size_display)
     display.blit(fon, (0, 0))
     while running_choose_level:
         for event in pygame.event.get():
@@ -300,7 +307,7 @@ def choose_level():
                 running_choose_level = False
                 terminate()
             if event.type == StartLevel1:
-                running_choose_level = False
+                print(3)
                 return
             if event.type == BackEvent:
                 running_choose_level = False
@@ -350,6 +357,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.cur_frame = (self.cur_frame + 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
 
+
 class Spase_tile(pygame.sprite.Sprite):
     '''класс прогрузки карты'''
     basic_spase_textures = {
@@ -368,8 +376,8 @@ class Spase_tile(pygame.sprite.Sprite):
                        load_image('decor_free2.png'),
                        load_image('decor_free3.png')],
         'decor_collision': [load_image('decor_collision1.png'),
-                       load_image('decor_collision2.png'),
-                       load_image('decor_collision3.png')],
+                            load_image('decor_collision2.png'),
+                            load_image('decor_collision3.png')],
     }
 
     def __init__(self, tile_type, pos_x, pos_y):
@@ -379,7 +387,10 @@ class Spase_tile(pygame.sprite.Sprite):
         self.make_texture(tile_type, pos_x, pos_y)
         if self in decor_collision_group:
             rect = self.image.get_rect()
-            self.rect =pygame.Rect(tile_width * (pos_x + 0.5) - rect.width * 0.5, tile_height * (pos_y + 0.5) - rect.height * 0.5, rect.width, rect.height)
+            self.rect = pygame.Rect(
+                tile_width * (pos_x + 0.5) - rect.width * 0.5,
+                tile_height * (pos_y + 0.5) - rect.height * 0.5, rect.width,
+                rect.height)
 
     def add_group(self, tile_type, pos_x, pos_y):
         '''добавляет в необходимую групу'''
@@ -422,6 +433,7 @@ class Spase_tile(pygame.sprite.Sprite):
         self.rect = pygame.Rect(tile_width * pos_x, tile_height * pos_y,
                                 tile_width, tile_height)
 
+
 class Entity_tile(pygame.sprite.Sprite):
     '''родительский класс существ(игрока, врагов и т.д.)'''
     basic_entitys_textures = {
@@ -446,27 +458,38 @@ class Entity_tile(pygame.sprite.Sprite):
 
     class Entity_image(pygame.sprite.Sprite):
         '''текстурка существа отдельная от модельки'''
-        def __init__(self, tile_type, pos_x, pos_y, max_hp: int, entity_type=None):
+
+        def __init__(self, tile_type, pos_x, pos_y, max_hp: int,
+                     entity_type=None):
             super().__init__(entity_image_group, entity_group,
                              all_sprites_group)
             self.max_hp = max_hp
             self.hp = max_hp
             entity_image = Entity_tile.basic_entitys_textures[tile_type]
-            entity_image = entity_image if not isinstance(entity_image, list) else entity_image[randint(0, len(entity_image) - 1)]
-            self.image_group = AnimatedSprite(entity_image, *SIZE_SPRITE.get(entity_type, (1, 1)))
+            entity_image = entity_image if not isinstance(entity_image,
+                                                          list) else \
+                entity_image[randint(0, len(entity_image) - 1)]
+            self.image_group = AnimatedSprite(entity_image,
+                                              *SIZE_SPRITE.get(entity_type,
+                                                               (1, 1)))
             self.image = self.image_group.image
-            self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - self.image.get_rect().width * 0.5),
-                                                   int(tile_height * (pos_y + 1) - self.image.get_rect().height))
+            self.rect = self.image.get_rect().move(int(tile_width * (
+                    pos_x + 0.5) - self.image.get_rect().width * 0.5),
+                                                   int(tile_height * (
+                                                           pos_y + 1) - self.image.get_rect().height))
 
     def __init__(self, tile_type: str, size_collision: list, pos_x: str,
                  pos_y: str, max_hp: int):
         '''загрузка модельки и тектуры, отдельно'''
         tile_type = tile_type_translate(tile_type)
-        self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp, entity_type)
+        self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp,
+                        entity_type)
 
-    def make_model(self, tile_type, size_collision, pos_x, pos_y, max_hp, entity_type):
+    def make_model(self, tile_type, size_collision, pos_x, pos_y, max_hp,
+                   entity_type):
         '''загружает текстуру и модельку объекта'''
-        self.entity_image = self.Entity_image(tile_type, pos_x, pos_y, max_hp, entity_type)
+        self.entity_image = self.Entity_image(tile_type, pos_x, pos_y, max_hp,
+                                              entity_type)
         super().__init__(entity_group, all_sprites_group)
         Spase_tile('floor', pos_x, pos_y)
         self.image = pygame.Surface(size_collision, pygame.SRCALPHA)
@@ -481,7 +504,7 @@ class Entity_tile(pygame.sprite.Sprite):
         pass
 
 
-class Pleyer_group_tile(Entity_tile):
+class Player_group_tile(Entity_tile):
     '''класс реализующий игрока'''
     entity_type = 'player'
 
@@ -489,7 +512,8 @@ class Pleyer_group_tile(Entity_tile):
                  pos_y: str, max_hp: int):
         self.move = [0, 0]
         tile_type = tile_type_translate(tile_type)
-        self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp, self.entity_type)
+        self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp,
+                        self.entity_type)
         player_group.add(self)
         player_image_group.add(self.entity_image)
 
@@ -502,7 +526,9 @@ class Pleyer_group_tile(Entity_tile):
             self.move = [self.move[0] - move[0], self.move[1] - move[1]]
             self.rect = self.rect.move(*move)
             self.entity_image.rect = self.entity_image.rect.move(*move)
-            if pygame.sprite.spritecollideany(self, walls_group) or pygame.sprite.spritecollideany(self, decor_collision_group):
+            if pygame.sprite.spritecollideany(self,
+                                              walls_group) or pygame.sprite.spritecollideany(
+                self, decor_collision_group):
                 move = (-move[0], -move[1])
                 self.rect = self.rect.move(*move)
                 self.entity_image.rect = self.entity_image.rect.move(*move)
@@ -512,20 +538,25 @@ class Pleyer_group_tile(Entity_tile):
             self.entity_image.image = self.entity_image.image_group.image
             return
         if keys[pygame.K_UP]:
-            self.move[1] -= int(player_speed * tick + 1) / ((sum(keys) + 1) % 2 + 1)**0.5
+            self.move[1] -= int(player_speed * tick + 1) / (
+                    (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
         if keys[pygame.K_DOWN]:
-            self.move[1] += int(player_speed * tick + 1) / ((sum(keys) + 1) % 2 + 1)**0.5
+            self.move[1] += int(player_speed * tick + 1) / (
+                    (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
         if keys[pygame.K_LEFT]:
-            self.move[0] -= int(player_speed * tick + 1) / ((sum(keys) + 1) % 2 + 1)**0.5
+            self.move[0] -= int(player_speed * tick + 1) / (
+                    (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
         if keys[pygame.K_RIGHT]:
-            self.move[0] += int(player_speed * tick + 1) / ((sum(keys) + 1) % 2 + 1)**0.5
+            self.move[0] += int(player_speed * tick + 1) / (
+                    (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
 
     def attack(self, mouse_x, mouse_y, damage):
         pass
+
 
 class Enemy_group1_tile(Entity_tile):
     '''класс реализующий 1 группу врагов'''
@@ -534,7 +565,8 @@ class Enemy_group1_tile(Entity_tile):
     def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp: int):
         self.move = (0, 0)
         tile_type = tile_type_translate(tile_type)
-        self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp, self.entity_type)
+        self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp,
+                        self.entity_type)
         self.entity_image.hp = 30
         enemy_group.add(self.entity_image, self)
         enemy_image_group.add(self.entity_image)
@@ -550,15 +582,18 @@ class Enemy_group1_tile(Entity_tile):
                      pos_player_center[1] - pos_enemy_center[1])
         distance = ((pos_delta[0]) ** 2 + (pos_delta[1]) ** 2) ** 0.5
         try:
-            pos_delta = (pos_delta[0]/distance * tick * enemy_speed, pos_delta[1]/distance * tick * enemy_speed)
-            self.move = (self.move[0] + pos_delta[0], self.move[1] + pos_delta[1])
+            pos_delta = (pos_delta[0] / distance * tick * enemy_speed,
+                         pos_delta[1] / distance * tick * enemy_speed)
+            self.move = (
+                self.move[0] + pos_delta[0], self.move[1] + pos_delta[1])
             move = (int(self.move[0]), int(self.move[1]))
             self.move = (self.move[0] - move[0], self.move[1] - move[1])
             self.rect = self.rect.move(*move)
             self.entity_image.rect = self.entity_image.rect.move(*move)
-            if pygame.sprite.spritecollideany(self.entity_image, player_image_group): print('connect')
+            if pygame.sprite.spritecollideany(self.entity_image,
+                                              player_image_group): pass
         except ZeroDivisionError:
-            print('connect')
+            pass
         except pygame.error as message:
             print('position error')
             raise SystemExit(message)
@@ -567,11 +602,13 @@ class Enemy_group1_tile(Entity_tile):
             self.entity_image.kill()
             self.kill()
 
+
 def enemy_tile_group(tile_tipe: str, x: str, y: str) -> None:
     '''подберает нужний класс врага'''
     value = tile_type_translate(tile_tipe)
     size_collision = SIZE_COLLISION[value]
-    if value == 'enemy_group1': Enemy_group1_tile(tile_tipe, size_collision, x, y, 30)
+    if value == 'enemy_group1': Enemy_group1_tile(tile_tipe, size_collision, x,
+                                                  y, 30)
     # elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group2': Enemy_group2_tile(x, y)
     # elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group3': Enemy_group3_tile(x, y)
     # elif FILE_TRANSLATOR[tile_tipe] == 'enemy_group4': Enemy_group4_tile(x, y)
@@ -599,22 +636,24 @@ class Hero(Player_group_tile):
 
     def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp):
         super().__init__(tile_type, size_collision, pos_x, pos_y, max_hp)
-        self.weapons = []
-        self.weapons_cycle = None
-        self.now_weapon = None
+        load = load_image_data
+        self.now_weapon = Pistol(load('pistol.png', -1),
+                                 load('fire_effect.png', -1), 100)
+        weapon_group.add(self.now_weapon)
 
     def attack(self, mouse_x, mouse_y):
         self.now_weapon.attack(mouse_x, mouse_y)
 
-    def add_weapon(self, weapon):
-        self.weapons.append(weapon)
-        self.weapons_cycle = cycle(self.weapons)
-        self.now_weapon = next(self.weapons_cycle)
-        if len(weapon_group.sprites()) > 1:
-            weapon_group.sprites()[0].kill()
-
     def change_weapon(self):
-        self.now_weapon = next(self.weapons_cycle)
+        load = load_image_data
+        if type(self.now_weapon) == Pistol:
+            weapon_pic = load('sword.png', -1)
+            effect_pic = load('sword_effect.png', -1)
+            self.now_weapon = Sword(weapon_pic, effect_pic, 1)
+        else:
+            weapon_pic = load('pistol.png', -1)
+            effect_pic = load('fire_effect.png', -1)
+            self.now_weapon = Pistol(weapon_pic, effect_pic, 100)
         weapon_group.sprites()[0].kill()
         weapon_group.add(self.now_weapon)
 
@@ -690,7 +729,6 @@ class Pistol(Weapon):
 
     def attack(self, mouse_x, mouse_y):
         '''анимация атаки не реализована, я пытался'''
-        Effect(self.attack_effect, self.rect.x, self.rect.y, self.angle)
         Bullet(mouse_x, mouse_y, self.damage)
 
 
@@ -718,19 +756,15 @@ class Bullet(pygame.sprite.Sprite):
         if collide(self, enemy_group) or collide(self, walls_group):
             self.kill()
 
+
 def main():
     global all_sprites_group, entity_group, entity_image_group, player_group, \
         player_image_group, enemy_group, enemy_image_group, spase_group, \
         decor_free_group, decor_collision_group, walls_group, walls_group_up, \
         walls_group_down, walls_group_left, walls_group_right, void_spase_group, \
-        bullets_group
+        bullets_group, weapon_group, effects_group
 
     tile_width = tile_height = 80
-    player_speed = 180
-    enemy_speed = 80
-    BULLET_SPEED = 10
-
-    pygame.key.set_repeat(1, 50)
 
     all_sprites_group = pygame.sprite.Group()
     entity_group = pygame.sprite.Group()
@@ -760,14 +794,13 @@ def main():
     map = pygame.Surface(size_screen)
 
     back_button = ScreenButton(0, 0, 100, 100, 'Назад',
-                               'data/button.png', 'data/button.png',
+                               'button.png', 'button.png',
                                'data/click.mp3')
 
     level_render(loaded_level[0])
     spase_group.draw(map)
     decor_free_group.draw(map)
     decor_collision_group.draw(map)
-
 
     pygame.time.set_timer(ENTITYIMAGESWAP, int(1000 / FPS_entity_swap))
     running = True
@@ -808,10 +841,15 @@ def main():
         walls_group_down.draw(screen)
         back_button.draw(screen)
         back_button.check_hover(pygame.mouse.get_pos())
+        weapon_group.draw(screen)
+        weapon_group.update()
+        effects_group.draw(screen)
+        effects_group.update()
         display.blit(screen, (0, 0))
         pygame.display.flip()
         clock.tick(FPS)
     terminate()
+
 
 if __name__ == '__main__':
     clock = pygame.time.Clock()
