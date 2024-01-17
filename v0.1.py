@@ -62,8 +62,10 @@ ShootingEvent = pygame.USEREVENT + 1
 StartLevel1 = pygame.USEREVENT + 2
 BackEvent = pygame.USEREVENT + 3
 ENTITYIMAGESWAP = pygame.USEREVENT + 4
-AttackEvent = pygame.USEREVENT + 5
-ChooseLevelEvent = pygame.USEREVENT + 6
+ChooseLevelEvent = pygame.USEREVENT + 5
+DeleteAllAfterSwordEvent = pygame.USEREVENT + 6
+AcceptAttackEvent = pygame.USEREVENT + 7
+StaminaRecoveryEvent = pygame.USEREVENT + 8
 
 
 def load_image_data(name: str, color_key=None):
@@ -210,10 +212,36 @@ def level_render(text_level: list) -> list:
                 enemy_tile_group(text_level[y][x], x, y)
 
 
-class HealthBar:
+class Bar:
+
     def __init__(self, screen, x, y, width, height):
         self.x, self.y, self.width, self.height, self.screen = (x, y, width,
                                                                 height, screen)
+
+    def draw(self):
+        pass
+
+
+class StaminaBar(Bar):
+    max_stamina = 10
+
+    def __init__(self, screen, x, y, width, height):
+        super().__init__(screen, x, y, width, height)
+        self.stamina = self.max_stamina
+
+    def draw(self):
+        draw = pygame.draw.rect
+        ratio = self.stamina / self.max_stamina
+        draw(self.screen, 'grey', (self.x, self.y, self.width, self.height))
+        draw(self.screen, 'blue',
+             (self.x, self.y, self.width * ratio, self.height))
+        draw(self.screen, 'black',
+             (self.x, self.y, self.width * ratio, self.height), width=1)
+
+
+class HealthBar(Bar):
+    def __init__(self, screen, x, y, width, height):
+        super().__init__(screen, x, y, width, height)
 
     def draw(self):
         draw = pygame.draw.rect
@@ -803,6 +831,7 @@ def main():
     tile_width = tile_height = 80
 
     health = HealthBar(display, 600, 600, 100, 30)
+    stamina = StaminaBar(display, 600, 631, 100, 30)
 
     all_sprites_group = pygame.sprite.Group()
     entity_group = pygame.sprite.Group()
@@ -843,29 +872,46 @@ def main():
 
     pygame.time.set_timer(ENTITYIMAGESWAP, int(1000 / FPS_entity_swap))
     running = True
-    attacking = True
+    attack = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if pygame.mouse.get_pressed(num_buttons=3)[0]:
-                    if attacking:
-                        pygame.time.set_timer(AttackEvent, 250)
-                        attacking = False
-                    elif not attacking:
-                        pygame.time.set_timer(AttackEvent, 0)
-                        attacking = True
+                if pygame.mouse.get_pressed(num_buttons=3)[0] and attack:
+                    player = player_group.sprites()[0]
+                    if type(player.now_weapon) is Sword:
+                        stamina.stamina -= 1
+                        pygame.time.set_timer(StaminaRecoveryEvent, 500)
+                        if stamina.stamina > 0:
+                            player.attack(*pygame.mouse.get_pos())
+                            attack = False
+                            pygame.time.set_timer(AcceptAttackEvent, 150)
+                            pygame.time.set_timer(DeleteAllAfterSwordEvent, 50)
+                    else:
+                        player.attack(*pygame.mouse.get_pos())
+                        attack = False
+                        pygame.time.set_timer(AcceptAttackEvent, 150)
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_e]:
                     player_group.sprites()[0].change_weapon()
-            if event.type == AttackEvent:
-                player_group.sprites()[0].attack(*pygame.mouse.get_pos())
             if event.type == BackEvent:
                 choose_level()
             back_button.handle_event(event, BackEvent)
-
+            if event.type == DeleteAllAfterSwordEvent:
+                if len(slash_group.sprites()):
+                    slash_group.sprites()[0].kill()
+                if len(effects_group.sprites()):
+                    effects_group.sprites()[0].kill()
+                pygame.time.set_timer(DeleteAllAfterSwordEvent, 0)
+            if event.type == AcceptAttackEvent:
+                attack = True
+                pygame.time.set_timer(AcceptAttackEvent, 0)
+            if event.type == StaminaRecoveryEvent:
+                stamina.stamina += 1
+                if stamina.stamina == stamina.max_stamina:
+                    pygame.time.set_timer(StaminaRecoveryEvent, 0)
         time = clock.get_time() / 1000
         player_group.update(time)
         enemy_group.update(time)
@@ -886,6 +932,7 @@ def main():
         walls_group.draw(screen)
         display.blit(screen, (0, 0))
         health.draw()
+        stamina.draw()
         pygame.display.flip()
         clock.tick(FPS)
     terminate()
