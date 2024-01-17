@@ -66,6 +66,7 @@ ChooseLevelEvent = pygame.USEREVENT + 5
 DeleteAllAfterSwordEvent = pygame.USEREVENT + 6
 AcceptAttackEvent = pygame.USEREVENT + 7
 StaminaRecoveryEvent = pygame.USEREVENT + 8
+ReloadPistolEvent = pygame.USEREVENT + 9
 
 
 def load_image_data(name: str, color_key=None):
@@ -252,6 +253,19 @@ class HealthBar(Bar):
              (self.x, self.y, self.width * ratio, self.height))
         draw(self.screen, 'black',
              (self.x, self.y, self.width * ratio, self.height), width=1)
+
+
+class BulletsCounter:
+    max_ammo = 30
+
+    def __init__(self, screen, x, y):
+        self.x, self.y, self.screen = x, y, screen
+        self.ammo = self.max_ammo
+
+    def draw(self):
+        font = pygame.font.Font(None, 50)
+        text = font.render(f'{self.ammo}/{self.max_ammo}', True, (0, 0, 0))
+        self.screen.blit(text, (self.x, self.y))
 
 
 class ScreenButton:
@@ -832,6 +846,7 @@ def main():
 
     health = HealthBar(display, 600, 600, 100, 30)
     stamina = StaminaBar(display, 600, 631, 100, 30)
+    ammo = BulletsCounter(display, 600, 662)
 
     all_sprites_group = pygame.sprite.Group()
     entity_group = pygame.sprite.Group()
@@ -873,6 +888,7 @@ def main():
     pygame.time.set_timer(ENTITYIMAGESWAP, int(1000 / FPS_entity_swap))
     running = True
     attack = True
+    reload_in_progress = False
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -881,21 +897,33 @@ def main():
                 if pygame.mouse.get_pressed(num_buttons=3)[0] and attack:
                     player = player_group.sprites()[0]
                     if type(player.now_weapon) is Sword:
-                        stamina.stamina -= 1
-                        pygame.time.set_timer(StaminaRecoveryEvent, 500)
                         if stamina.stamina > 0:
                             player.attack(*pygame.mouse.get_pos())
                             attack = False
                             pygame.time.set_timer(AcceptAttackEvent, 150)
                             pygame.time.set_timer(DeleteAllAfterSwordEvent, 50)
+                            pygame.mixer.Sound('data/sword-punch.mp3').play()
+                        stamina.stamina -= 1
+                        pygame.time.set_timer(StaminaRecoveryEvent, 500)
                     else:
-                        player.attack(*pygame.mouse.get_pos())
-                        attack = False
-                        pygame.time.set_timer(AcceptAttackEvent, 150)
+                        if ammo.ammo > 0:
+                            player.attack(*pygame.mouse.get_pos())
+                            attack = False
+                            pygame.time.set_timer(AcceptAttackEvent, 150)
+                            ammo.ammo -= 1
+                            pygame.mixer.Sound('data/fire_pistol.mp3').play()
+                        if ammo.ammo == 0:
+                            pygame.mixer.Sound('data/empty_ammo.mp3').play()
+                        if ammo.ammo <= 0 and not reload_in_progress:
+                            pygame.time.set_timer(ReloadPistolEvent, 5000)
+                            pygame.mixer.Sound('data/pistol_reload.mp3').play()
+                            reload_in_progress = True
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_e]:
                     player_group.sprites()[0].change_weapon()
+                    if type(player_group.sprites()[0].now_weapon) == Sword:
+                        pygame.mixer.Sound('data/changing_to_sword.mp3').play()
             if event.type == BackEvent:
                 choose_level()
             back_button.handle_event(event, BackEvent)
@@ -912,6 +940,10 @@ def main():
                 stamina.stamina += 1
                 if stamina.stamina == stamina.max_stamina:
                     pygame.time.set_timer(StaminaRecoveryEvent, 0)
+            if event.type == ReloadPistolEvent:
+                ammo.ammo = ammo.max_ammo
+                pygame.time.set_timer(ReloadPistolEvent, 0)
+                reload_in_progress = False
         time = clock.get_time() / 1000
         player_group.update(time)
         enemy_group.update(time)
@@ -933,6 +965,7 @@ def main():
         display.blit(screen, (0, 0))
         health.draw()
         stamina.draw()
+        ammo.draw()
         pygame.display.flip()
         clock.tick(FPS)
     terminate()
