@@ -600,6 +600,8 @@ class Player_group_tile(Entity_tile):
             self.move[0] += int(player_speed * tick + 1) / (
                     (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
+        if self.hp <= 0:
+            self.kill()
 
     def attack(self, mouse_x, mouse_y, damage):
         pass
@@ -610,6 +612,7 @@ class Enemy_group1_tile(Entity_tile):
     entity_type = 'enemy_group1'
 
     def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp: int):
+        # self.weapon = Mace(self, load_image_data(..., -1), 30)
         self.move = (0, 0)
         tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp,
@@ -648,6 +651,7 @@ class Enemy_group1_tile(Entity_tile):
         if self.entity_image.hp <= 0:
             self.entity_image.kill()
             self.kill()
+        # Crushing(self.weapon)
 
 
 def enemy_tile_group(tile_tipe: str, x: str, y: str) -> None:
@@ -703,10 +707,10 @@ class Hero(Player_group_tile):
 
 
 class Effect(pygame.sprite.Sprite):
-    def __init__(self, angle: float):
+    def __init__(self, angle: float, image_name):
         super().__init__(all_sprites_group, effects_group)
         self.image = pygame.transform.rotate(pygame.transform.scale(
-            load_image_data('sword_effect.png', -1), (32, 32)), angle)
+            load_image_data(image_name, -1), (32, 32)), angle)
         sword = weapon_group.sprites()[0].rect
         s_x, s_y = sword.x, sword.y
         if 230 <= angle <= 270:
@@ -724,7 +728,7 @@ class Effect(pygame.sprite.Sprite):
 
 
 class Slash(pygame.sprite.Sprite):
-    def __init__(self, angle: float, damage):
+    def __init__(self, angle: float, damage: int):
         super().__init__(slash_group, all_sprites_group)
         self.damage = damage
         self.image = pygame.Surface((32, 32), pygame.SRCALPHA)
@@ -749,6 +753,59 @@ class Slash(pygame.sprite.Sprite):
             self.kill()
         if len(slash_group.sprites()) > 1:
             self.kill()
+
+
+class Crushing(pygame.sprite.Sprite):
+    def __init__(self, weapon, x: int, y: int, w: int, h: int, damage: int):
+        super().__init__(crushes_group, all_sprites_group)
+        self.weapon = weapon
+        self.damage = damage
+        self.image = pygame.Surface((32, 32), pygame.SRCALPHA)
+        self.image.fill((0, 0, 0, 0))
+        self.rect = pygame.Rect(x, y, w, h)
+
+    def update(self):
+        collide = pygame.sprite.spritecollideany
+        if collide(self, player_group):
+            self.weapon.attack()
+        self.kill()
+
+
+class Mace(pygame.sprite.Sprite):
+    '''Класс булавы'''
+
+    def __init__(self, owner: Enemy_group1_tile, image: pygame.Surface,
+                 damage: int):
+        super().__init__(all_sprites_group, enemy_weapon_group)
+        self.original_image = self.image = pygame.transform.scale(image,
+                                                                  (30, 30))
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = owner.rect.x, owner.rect.y
+        self.damage = damage
+        self.angle = 0
+        self.owner = owner.rect
+
+    def update(self, *args, **kwargs):
+        try:
+            x, y = self.owner.x, self.owner.y
+        except Exception:
+            self.kill()
+        player = player_group.sprites()[0].rect
+        player_x, player_y = player.x, player.y
+        self.rect.x = x
+        self.rect.y = y
+        self.angle = -1 * math.degrees(math.atan2(player_x - y,
+                                                  player_y - x)) + 180
+        if 270 >= self.angle >= 90:
+            self.image = pygame.transform.rotate(
+                pygame.transform.flip(self.original_image, flip_x=1, flip_y=0),
+                self.angle - 180)
+        else:
+            self.image = pygame.transform.rotate(self.original_image,
+                                                 self.angle)
+
+    def attack(self):
+        pass
 
 
 class Weapon(pygame.sprite.Sprite):
@@ -793,7 +850,7 @@ class Sword(Weapon):
 
     def attack(self, *args):
         Slash(self.angle, self.damage)
-        Effect(self.angle)
+        Effect(self.angle, 'sword_effect.png')
 
 
 class Pistol(Weapon):
@@ -840,7 +897,8 @@ def main():
         player_image_group, enemy_group, enemy_image_group, spase_group, \
         decor_free_group, decor_collision_group, walls_group, walls_group_up, \
         walls_group_down, walls_group_left, walls_group_right, void_spase_group, \
-        bullets_group, weapon_group, effects_group, slash_group
+        bullets_group, weapon_group, effects_group, slash_group, crushes_group, \
+        enemy_weapon_group
 
     tile_width = tile_height = 80
 
@@ -868,6 +926,8 @@ def main():
     weapon_group = pygame.sprite.Group()
     slash_group = pygame.sprite.Group()
     effects_group = pygame.sprite.Group()
+    crushes_group = pygame.sprite.Group()
+    enemy_weapon_group = pygame.sprite.Group()
     loaded_level = load_level('level_test1.txt')
 
     size_screen = (
@@ -903,8 +963,8 @@ def main():
                             pygame.time.set_timer(AcceptAttackEvent, 150)
                             pygame.time.set_timer(DeleteAllAfterSwordEvent, 50)
                             pygame.mixer.Sound('data/sword-punch.mp3').play()
-                        stamina.stamina -= 1
-                        pygame.time.set_timer(StaminaRecoveryEvent, 500)
+                            stamina.stamina -= 1
+                            pygame.time.set_timer(StaminaRecoveryEvent, 500)
                     else:
                         if ammo.ammo > 0:
                             player.attack(*pygame.mouse.get_pos())
@@ -938,7 +998,8 @@ def main():
                 pygame.time.set_timer(AcceptAttackEvent, 0)
             if event.type == StaminaRecoveryEvent:
                 stamina.stamina += 1
-                if stamina.stamina == stamina.max_stamina:
+                if stamina.stamina >= stamina.max_stamina:
+                    stamina.stamina = stamina.max_stamina
                     pygame.time.set_timer(StaminaRecoveryEvent, 0)
             if event.type == ReloadPistolEvent:
                 ammo.ammo = ammo.max_ammo
