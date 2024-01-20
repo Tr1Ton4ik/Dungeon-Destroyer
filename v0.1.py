@@ -49,7 +49,7 @@ SIZE_COLLISION = {  # константа размеров модельки иг�
     'traps2': (30, 1),
 }
 SIZE_SPRITE = {  # кол. строк и столбов у спрайта игрока, врагов и т.д.
-    'player': (3, 1),
+    'player': (3, 2),
     'enemy_group1': (9, 8),
     'enemy_group2': (1, 1),
     'enemy_group3': (1, 1),
@@ -318,29 +318,59 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.image = self.frames[0][self.rows]
 
 
+class AnimatedPleyer_group_tile(AnimatedSprite):
+    def __init__(self, sheet, size):
+        image = sheet
+        image_reverse = pygame.transform.flip(image, 1, 0)
+        sheet = pygame.Surface((image.get_rect().w, image.get_rect().h * 2), pygame.SRCALPHA)
+        sheet.blit(image, (0, 0))
+        sheet.blit(image_reverse, (0, image_reverse.get_rect().h))
+        super().__init__(sheet.convert_alpha(), size)
+        self.columns, self.rows = 0, 0
+        self.last_key = 'l'
+
+    def update(self, keys):
+        if keys[pygame.K_LEFT] and keys[pygame.K_RIGHT]:
+            pass
+        elif keys[pygame.K_LEFT]:
+            if self.last_key == 'l': self.rows = (self.rows + 1) % 3
+            else: self.columns = 0
+            self.last_key = 'l'
+        elif keys[pygame.K_RIGHT]:
+            if self.last_key == 'r': self.rows = (self.rows + 1) % 3
+            else: self.columns = 1
+            self.last_key = 'r'
+        if keys[pygame.K_UP]: self.rows = (self.rows + 1) % 3
+        if keys[pygame.K_DOWN]: self.rows = (self.rows + 1) % 3
+
+        self.image = self.frames[self.columns][self.rows]
+
+
 class AnimatedEnemy_group1_tile(AnimatedSprite):
     def __init__(self, sheet, size):
         super().__init__(sheet, size)
         self.columns, self.rows = 0, 0
-        self.rows_delta = 0
+        self.rows_delta = 1
 
     def update(self, step):
         x_step, y_step = step
         if x_step == y_step == 0:
             self.image = self.frames[0][0]
 
-        columns = 6 if x_step > 0 else 2
-        if x_step > 0: self.rows_delta = 1
-        elif x_step < 0: self.rows_delta = -1
+        if x_step > 0:
+            columns = 6
+        if x_step < 0:
+            columns = 2
+        if x_step == 0: columns = self.columns
         if self.columns == columns: self.rows = (self.rows + self.rows_delta) % 6
         else: self.rows = 0
 
         self.image = self.frames[columns][self.rows]
         self.columns = columns
 
-def Aimation_group_selection(entity_type, entity_image, size):
-    if entity_type == 'player': return AnimatedSprite(entity_image, size)
-    elif entity_type == 'enemy_group1': return AnimatedEnemy_group1_tile(entity_image, size)
+def Aimation_group_selection(entity_type, entity_image, element):
+    if entity_type == 'player': return AnimatedPleyer_group_tile(entity_image, element)
+    elif entity_type == 'enemy_group1': return AnimatedEnemy_group1_tile(entity_image, element)
 
 class Spase_tile(pygame.sprite.Sprite):
     '''класс прогрузки карты'''
@@ -416,7 +446,7 @@ class Spase_tile(pygame.sprite.Sprite):
 class Entity_tile(pygame.sprite.Sprite):
     '''родительский класс существ(игрока, врагов и т.д.)'''
     basic_entitys_textures = {
-        'player': load_image('player.png'),
+        'player': load_image_data('player.png', -1),
         'enemy_group1': load_image_data('enemy11.png', -1),
         'enemy_group2': [load_image('enemy21.png'),
                          load_image('enemy22.png'),
@@ -459,8 +489,7 @@ class Entity_tile(pygame.sprite.Sprite):
         super().__init__(entity_group, all_sprites_group)
         Spase_tile('floor', pos_x, pos_y)
         self.image = pygame.Surface(size_collision, pygame.SRCALPHA)
-        pygame.draw.rect(self.image, pygame.Color('green'), pygame.Rect(0, 0,
-                                                                        *size_collision))  # заглушка для модельки, чтобы было видно
+        # self.image.fill(pygame.Color('green'))  # заглушка для модельки, чтобы было видно
         self.rect = self.image.get_rect().move(int(tile_width * (
                 pos_x + 0.5) - self.image.get_rect().width * 0.5),
                                                int(tile_height * (
@@ -497,7 +526,7 @@ class Pleyer_group_tile(Entity_tile):
                 self.entity_image.rect = self.entity_image.rect.move(*move)
 
         if kwargs.get('image_swap', False):
-            self.entity_image.image_group.update()
+            self.entity_image.image_group.update(keys)
             self.entity_image.image = self.entity_image.image_group.image
             return
         if keys[pygame.K_UP]:
