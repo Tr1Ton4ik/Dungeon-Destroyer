@@ -41,8 +41,8 @@ FILE_TRANSLATOR = {  # переводит чиловое значение из �
 }
 
 SIZE_COLLISION = {  # константа размеров модельки игрока, врагов и т.д.
-    'player': (40, 1),
-    'enemy_group1': (70, 1),
+    'player': (30, 1),
+    'enemy_group1': (30, 1),
     'enemy_group2': (30, 1),
     'enemy_group3': (30, 1),
     'enemy_group4': (30, 1),
@@ -246,7 +246,7 @@ class BulletsCounter:
 
     def draw(self):
         font = pygame.font.Font(None, 50)
-        text = font.render(f'{self.ammo}/{self.max_ammo}', True, (0, 0, 0))
+        text = font.render(f'{self.ammo}/{self.max_ammo}', True, (255, 255, 255))
         self.screen.blit(text, (self.x, self.y))
 
 
@@ -584,7 +584,7 @@ class Entity_tile(pygame.sprite.Sprite):
         super().__init__(entity_group, all_sprites_group)
         Spase_tile('floor', pos_x, pos_y)
         self.image = pygame.Surface(size_collision, pygame.SRCALPHA)
-        # self.image.fill(pygame.Color('green'))  # заглушка для модельки, чтобы было видно
+        #  self.image.fill(pygame.Color('green'))  # заглушка для модельки, чтобы было видно
         self.rect = self.image.get_rect().move(int(tile_width * (
                 pos_x + 0.5) - self.image.get_rect().width * 0.5),
                                                int(tile_height * (
@@ -1044,6 +1044,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == ENTITYIMAGESWAP:
+                player_group.update(time, image_swap=True)
+                enemy_group.update(time, image_swap=True)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if pygame.mouse.get_pressed(num_buttons=3)[0] and attack:
                     player = player_group.sprites()[0]
