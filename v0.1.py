@@ -50,7 +50,7 @@ SIZE_COLLISION = {  # константа размеров модельки иг�
 }
 SIZE_SPRITE = {  # кол. строк и столбов у спрайта игрока, врагов и т.д.
     'player': (3, 1),
-    'enemy_group1': (1, 1),
+    'enemy_group1': (9, 8),
     'enemy_group2': (1, 1),
     'enemy_group3': (1, 1),
     'enemy_group4': (1, 1),
@@ -298,23 +298,49 @@ class AnimatedSprite(pygame.sprite.Sprite):
     def __init__(self, sheet, size):
         super().__init__(all_sprites_group)
         self.frames = []
+        self.rows = 0
         self.cut_sheet(sheet, size)
-        self.cur_frame = 0
-        self.image = self.frames[self.cur_frame]
+        self.image = self.frames[0][0]
 
     def cut_sheet(self, sheet, size):
         columns, rows = size
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
                                 sheet.get_height() // rows)
         for j in range(rows):
+            frames = []
             for i in range(columns):
                 frame_location = (self.rect.w * i, self.rect.h * j)
-                self.frames.append(sheet.subsurface(pygame.Rect(
-                    frame_location, self.rect.size)))
+                frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
+            self.frames += [frames]
 
     def update(self):
-        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-        self.image = self.frames[self.cur_frame]
+        self.rows = (self.rows + 1) % len(self.frames)
+        self.image = self.frames[0][self.rows]
+
+
+class AnimatedEnemy_group1_tile(AnimatedSprite):
+    def __init__(self, sheet, size):
+        super().__init__(sheet, size)
+        self.columns, self.rows = 0, 0
+        self.rows_delta = 0
+
+    def update(self, step):
+        x_step, y_step = step
+        if x_step == y_step == 0:
+            self.image = self.frames[0][0]
+
+        columns = 6 if x_step > 0 else 2
+        if x_step > 0: self.rows_delta = 1
+        elif x_step < 0: self.rows_delta = -1
+        if self.columns == columns: self.rows = (self.rows + self.rows_delta) % 6
+        else: self.rows = 0
+
+        self.image = self.frames[columns][self.rows]
+        self.columns = columns
+
+def Aimation_group_selection(entity_type, entity_image, size):
+    if entity_type == 'player': return AnimatedSprite(entity_image, size)
+    elif entity_type == 'enemy_group1': return AnimatedEnemy_group1_tile(entity_image, size)
 
 class Spase_tile(pygame.sprite.Sprite):
     '''класс прогрузки карты'''
@@ -391,7 +417,7 @@ class Entity_tile(pygame.sprite.Sprite):
     '''родительский класс существ(игрока, врагов и т.д.)'''
     basic_entitys_textures = {
         'player': load_image('player.png'),
-        'enemy_group1': load_image('enemy11.png'),
+        'enemy_group1': load_image_data('enemy11.png', -1),
         'enemy_group2': [load_image('enemy21.png'),
                          load_image('enemy22.png'),
                          load_image('enemy23.png')],
@@ -416,7 +442,7 @@ class Entity_tile(pygame.sprite.Sprite):
             self.hp = max_hp
             entity_image = Entity_tile.basic_entitys_textures[tile_type]
             entity_image = entity_image if not isinstance(entity_image, list) else entity_image[randint(0, len(entity_image) - 1)]
-            self.image_group = AnimatedSprite(entity_image, SIZE_SPRITE.get(entity_type, (1, 1)))
+            self.image_group = Aimation_group_selection(entity_type, entity_image, SIZE_SPRITE.get(entity_type, (1, 1)))
             self.image = self.image_group.image
             self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - self.image.get_rect().width * 0.5),
                                                    int(tile_height * (pos_y + 1) - self.image.get_rect().height))
@@ -496,14 +522,20 @@ class Enemy_group1_tile(Entity_tile):
 
     def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp: int):
         self.move = (0, 0)
+        self.step = (0, 0)
         tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp, self.entity_type)
         self.entity_image.hp = 30
         enemy_group.add(self.entity_image, self)
         enemy_image_group.add(self.entity_image)
 
-    def update(self, tick):
+    def update(self, tick, **kwargs):
         '''передвижение врагов, работает хреново'''
+        if kwargs.get('image_swap', False):
+            self.entity_image.image_group.update(self.step)
+            self.entity_image.image = self.entity_image.image_group.image
+            return
+
         player = player_group.sprites()[0]
         pos_player_center = (player.rect.x + player.rect.width * 0.5,
                              player.rect.y + player.rect.height * 0.5)
@@ -515,11 +547,10 @@ class Enemy_group1_tile(Entity_tile):
         try:
             pos_delta = (pos_delta[0]/distance * tick * enemy_speed, pos_delta[1]/distance * tick * enemy_speed)
             self.move = (self.move[0] + pos_delta[0], self.move[1] + pos_delta[1])
-            move = (int(self.move[0]), int(self.move[1]))
-            self.move = (self.move[0] - move[0], self.move[1] - move[1])
-            self.rect = self.rect.move(*move)
-            self.entity_image.rect = self.entity_image.rect.move(*move)
-            if pygame.sprite.spritecollideany(self.entity_image, player_image_group): print('connect')
+            self.step = (int(self.move[0]), int(self.move[1]))
+            self.move = (self.move[0] - self.step[0], self.move[1] - self.step[1])
+            self.rect = self.rect.move(*self.step)
+            self.entity_image.rect = self.entity_image.rect.move(*self.step)
         except ZeroDivisionError:
             print('connect')
         except pygame.error as message:
@@ -590,7 +621,6 @@ class Bullet(pygame.sprite.Sprite):
         collide = pygame.sprite.spritecollideany
         if collide(self, enemy_group):
             collide(self, enemy_image_group).hp -= self.damage
-            print(self.damage)
             self.kill()
         if collide(self, walls_group) or collide(self, decor_collision_group):
             self.kill()
@@ -661,8 +691,9 @@ def main():
                     elif not shooting:
                         pygame.time.set_timer(ShootingEvent, 0)
                         shooting = True
-            # if event.type == ENTITYIMAGESWAP:
-            #     player_group.update(time, image_swap=True)
+            if event.type == ENTITYIMAGESWAP:
+                player_group.update(time, image_swap=True)
+                enemy_group.update(time, image_swap=True)
             if event.type == ShootingEvent:
                 player_group.sprites()[0].attack(*pygame.mouse.get_pos(), 10)
             if event.type == BackEvent:
@@ -672,11 +703,11 @@ def main():
         time = clock.get_time() / 1000
         player_group.update(time)
         enemy_group.update(time)
+        bullets_group.update()
 
         display.fill(pygame.Color("black"))
         screen.blit(map, (0, 0))
         bullets_group.draw(screen)
-        bullets_group.update()
         entity_group.draw(screen)
         walls_group_down.draw(screen)
         back_button.draw(screen)
