@@ -13,6 +13,7 @@ enemy_speed = 80
 BULLET_SPEED = 10
 size_display = WIDTH, HEIGHT = FOV[0] * tile_width, FOV[1] * tile_height
 display = pygame.display.set_mode(size_display)
+monsters_can_attack_list = []
 
 pygame.init()
 FILE_TRANSLATOR = {  # переводит чиловое значение из файла уровня в текст
@@ -67,6 +68,8 @@ DeleteAllAfterSwordEvent = pygame.USEREVENT + 6
 AcceptAttackEvent = pygame.USEREVENT + 7
 StaminaRecoveryEvent = pygame.USEREVENT + 8
 ReloadPistolEvent = pygame.USEREVENT + 9
+RecoveryEnemyAttack = pygame.USEREVENT + 10
+DeleteEnemyEffects = pygame.USEREVENT + 11
 
 
 def load_image_data(name: str, color_key=None):
@@ -343,7 +346,7 @@ def choose_level():
     back_button = ScreenButton(0, 0, 100, 60, 'Назад',
                                'button.png', 'emptybutton_hover.png',
                                'data/click.mp3')
-    fon = pygame.transform.scale(load_image_data('start_screen.png'),
+    fon = pygame.transform.scale(load_image_data('level_menu.png'),
                                  size_display)
     display.blit(fon, (0, 0))
     while running_choose_level:
@@ -620,11 +623,14 @@ class Enemy_group1_tile(Entity_tile):
         self.entity_image.hp = 30
         enemy_group.add(self.entity_image, self)
         enemy_image_group.add(self.entity_image)
-        self.weapon = ...
+        self.weapon = Mace(self, load_image_data('bulava.png', -1), 1)
 
     def update(self, tick):
         '''передвижение врагов, работает хреново'''
-        player = player_group.sprites()[0]
+        try:
+            player = player_group.sprites()[0]
+        except:
+            choose_level()
         pos_player_center = (player.rect.x + player.rect.width * 0.5,
                              player.rect.y + player.rect.height * 0.5)
         pos_enemy_center = (self.rect.x + self.rect.width * 0.5,
@@ -715,10 +721,16 @@ class Hero(Player_group_tile):
 class Effect(pygame.sprite.Sprite):
     def __init__(self, angle: float, image_name):
         super().__init__(all_sprites_group, effects_group)
-        self.image = pygame.transform.rotate(pygame.transform.scale(
-            load_image_data(image_name, -1), (32, 32)), angle)
+        self.image = load_image_data(image_name, -1)
         sword = weapon_group.sprites()[0].rect
         s_x, s_y = sword.x, sword.y
+        if 270 >= angle >= 90:
+            self.image = pygame.transform.rotate(
+                pygame.transform.flip(self.image, flip_x=1, flip_y=0),
+                angle - 180)
+        else:
+            self.image = pygame.transform.rotate(self.image,
+                                                 angle)
         if 230 <= angle <= 270:
             self.rect = pygame.Rect(s_x, s_y - 32, 32, 32)
         elif 90 <= angle <= 148:
@@ -765,8 +777,8 @@ class Check_player(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, w: int, h: int, weapon):
         super().__init__(checks_group, all_sprites_group)
         self.weapon = weapon
-        self.image = pygame.Surface((32, 32))
-        self.image.fill((0, 0, 0))
+        self.image = pygame.Surface((32, 32), pygame.SRCALPHA)
+        self.image.fill((0, 0, 0, 0))
         self.rect = pygame.Rect(x, y, w, h)
 
     def update(self):
@@ -784,23 +796,24 @@ class Mace(pygame.sprite.Sprite):
         super().__init__(all_sprites_group, enemy_weapon_group)
         self.original_image = self.image = pygame.transform.scale(image,
                                                                   (30, 30))
+        self.can_attack = 300
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = owner.rect.x, owner.rect.y
         self.damage = damage
         self.angle = 0
-        self.owner = owner.rect
+        self.owner = owner
 
     def update(self, *args, **kwargs):
-        try:
-            x, y = self.owner.x, self.owner.y
-        except Exception:
+        if len(self.owner.groups()) == 0:
             self.kill()
-        player = player_group.sprites()[0].rect
-        player_x, player_y = player.x, player.y
+        x, y = self.owner.rect.x, self.owner.rect.y
         self.rect.x = x
         self.rect.y = y
-        self.angle = -1 * math.degrees(math.atan2(player_x - y,
-                                                  player_y - x)) + 180
+        player = player_group.sprites()[0].rect
+        player_x, player_y = player.x, player.y
+
+        self.angle = -1 * math.degrees(math.atan2(player_y - y,
+                                                  player_x - x)) + 180
         if 270 >= self.angle >= 90:
             self.image = pygame.transform.rotate(
                 pygame.transform.flip(self.original_image, flip_x=1, flip_y=0),
@@ -808,16 +821,35 @@ class Mace(pygame.sprite.Sprite):
         else:
             self.image = pygame.transform.rotate(self.original_image,
                                                  self.angle)
+        if self.can_attack < 300:
+            self.can_attack += 1
 
     def attack(self):
-        pass
+        if self.can_attack >= 300:
+            player_group.sprites()[0].hp -= self.damage
+            Crush(self, self.angle)
+            self.can_attack = 0
+            pygame.time.set_timer(DeleteEnemyEffects, 100)
 
 
 class Crush(pygame.sprite.Sprite):
-    def __init__(self, angle, damage):
+    def __init__(self, weapon: Mace, angle):
         super().__init__(effects_group, all_sprites_group)
         self.angle = angle
-        self.damage = damage
+        self.weapon = weapon
+        self.image = load_image_data('bulava_effect.png', -1)
+        self.rect = pygame.Rect(weapon.rect.x, weapon.rect.y,
+                                self.image.get_width(),
+                                self.image.get_height())
+        w_x, w_y = self.weapon.rect.x,self.weapon.rect.y  
+        if 230 <= angle <= 270:
+            self.rect = pygame.Rect(w_x, w_y - 32, 32, 32)
+        elif 90 <= angle <= 148:
+            self.rect = pygame.Rect(w_x, w_y + 32, 32, 32)
+        elif 90 <= angle <= 270:
+            self.rect = pygame.Rect(w_x + 32, w_y, 32, 32)
+        else:
+            self.rect = pygame.Rect(w_x - 32, w_y, 32, 32)
 
 
 class Weapon(pygame.sprite.Sprite):
@@ -1017,6 +1049,9 @@ def main():
                 ammo.ammo = ammo.max_ammo
                 pygame.time.set_timer(ReloadPistolEvent, 0)
                 reload_in_progress = False
+            if event.type == DeleteEnemyEffects:
+                effects_group.sprites()[0].kill()
+                pygame.time.set_timer(DeleteEnemyEffects, 0)
         time = clock.get_time() / 1000
         player_group.update(time)
         enemy_group.update(time)
@@ -1037,6 +1072,8 @@ def main():
         checks_group.draw(screen)
         checks_group.update()
         walls_group.draw(screen)
+        enemy_weapon_group.draw(screen)
+        enemy_weapon_group.update()
         display.blit(screen, (0, 0))
         health.draw()
         stamina.draw()
