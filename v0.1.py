@@ -13,7 +13,7 @@ enemy_speed = 80
 BULLET_SPEED = 10
 size_display = WIDTH, HEIGHT = FOV[0] * tile_width, FOV[1] * tile_height
 display = pygame.display.set_mode(size_display)
-monsters_can_attack_list = []
+loaded_level = None
 
 pygame.init()
 FILE_TRANSLATOR = {  # переводит чиловое значение из файла уровня в текст
@@ -70,6 +70,7 @@ StaminaRecoveryEvent = pygame.USEREVENT + 8
 ReloadPistolEvent = pygame.USEREVENT + 9
 RecoveryEnemyAttack = pygame.USEREVENT + 10
 DeleteEnemyEffects = pygame.USEREVENT + 11
+StartLevel2 = pygame.USEREVENT + 12
 
 
 def load_image_data(name: str, color_key=None):
@@ -233,8 +234,6 @@ class HealthBar(Bar):
         draw(self.screen, 'red', (self.x, self.y, self.width, self.height))
         draw(self.screen, 'green',
              (self.x, self.y, self.width * ratio, self.height))
-        draw(self.screen, 'black',
-             (self.x, self.y, self.width * ratio, self.height), width=1)
 
 
 class BulletsCounter:
@@ -246,7 +245,8 @@ class BulletsCounter:
 
     def draw(self):
         font = pygame.font.Font(None, 50)
-        text = font.render(f'{self.ammo}/{self.max_ammo}', True, (255, 255, 255))
+        text = font.render(f'{self.ammo}/{self.max_ammo}', True,
+                           (255, 255, 255))
         self.screen.blit(text, (self.x, self.y))
 
 
@@ -293,9 +293,70 @@ class ScreenButton:
                 pygame.event.Event(UserEvent, button=self))
 
 
+def win_screen() -> None:
+    running_win_screen = True
+    font = pygame.font.Font(None, 50)
+    text = font.render("ПОБЕДА", True, (0, 255, 0))
+    text_x = WIDTH // 2 - text.get_width() // 2
+    text_y = HEIGHT // 2 - text.get_height() // 2
+    text_w = text.get_width()
+    text_h = text.get_height()
+    button = ScreenButton(text_x, text_y + 50, 160, 50, 'Продолжить',
+                          'button.png', 'emptybutton_hover.png',
+                          'data/click.mp3')
+    while running_win_screen:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running_win_screen = False
+                terminate()
+            if event.type == ChooseLevelEvent:
+                running_win_screen = False
+                choose_level()
+            button.handle_event(event, ChooseLevelEvent)
+        display.fill((0, 0, 0))
+        display.blit(text, (text_x, text_y))
+        pygame.draw.rect(display, (0, 255, 0), (text_x - 10, text_y - 10,
+                                                text_w + 20, text_h + 20), 1)
+        button.check_hover(pygame.mouse.get_pos())
+        button.draw(display)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def death_screen() -> None:
+    running_death_screen = True
+    font = pygame.font.Font(None, 50)
+    text = font.render("ПОРАЖЕНИЕ", True, (255, 0, 0))
+    text_x = WIDTH // 2 - text.get_width() // 2
+    text_y = HEIGHT // 2 - text.get_height() // 2
+    text_w = text.get_width()
+    text_h = text.get_height()
+    button = ScreenButton(text_x + text.get_width(), text_y + 50, 160, 50,
+                          'Продолжить',
+                          'button.png', 'emptybutton_hover.png',
+                          'data/click.mp3')
+    while running_death_screen:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running_death_screen = False
+                terminate()
+            if event.type == ChooseLevelEvent:
+                running_death_screen = False
+                choose_level()
+            button.handle_event(event, ChooseLevelEvent)
+        display.fill((0, 0, 0))
+        display.blit(text, (text_x, text_y))
+        pygame.draw.rect(display, (255, 0, 0), (text_x - 10, text_y - 10,
+                                                text_w + 20, text_h + 20), 1)
+        button.check_hover(pygame.mouse.get_pos())
+        button.draw(display)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
 def start_screen() -> None:
     running_start_screen = True
-    button = ScreenButton(10, 190, 100, 100, 'Играть',
+    button = ScreenButton(10, 190, 100, 50, 'Играть',
                           'button.png', 'emptybutton_hover.png',
                           'data/click.mp3')
     fon = pygame.transform.scale(load_image_data('start_screen.png'),
@@ -318,10 +379,14 @@ def start_screen() -> None:
 
 
 def choose_level():
+    global loaded_level
     running_choose_level = True
-    button = ScreenButton(10, 190, 130, 100, '1 уровень',
+    button = ScreenButton(10, 190, 130, 50, '1 уровень',
                           'button.png', 'emptybutton_hover.png',
                           'data/click.mp3')
+    button2 = ScreenButton(10, 250, 130, 50, '2 уровень',
+                           'button.png', 'emptybutton_hover.png',
+                           'data/click.mp3')
     back_button = ScreenButton(0, 0, 100, 60, 'Назад',
                                'button.png', 'emptybutton_hover.png',
                                'data/click.mp3')
@@ -334,17 +399,24 @@ def choose_level():
                 running_choose_level = False
                 terminate()
             if event.type == StartLevel1:
+                loaded_level = load_level('level_test1.txt')
+                main()
+            if event.type == StartLevel2:
+                loaded_level = load_level('level_test2.txt')
                 main()
             if event.type == BackEvent:
                 running_choose_level = False
                 start_screen()
                 main()
             button.handle_event(event, StartLevel1)
+            button2.handle_event(event, StartLevel2)
             back_button.handle_event(event, BackEvent)
         back_button.draw(display)
         back_button.check_hover(pygame.mouse.get_pos())
         button.check_hover(pygame.mouse.get_pos())
         button.draw(display)
+        button2.check_hover(pygame.mouse.get_pos())
+        button2.draw(display)
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -557,7 +629,7 @@ class Entity_tile(pygame.sprite.Sprite):
             entity_image = Entity_tile.basic_entitys_textures[tile_type]
             entity_image = entity_image if not isinstance(entity_image,
                                                           list) else \
-            entity_image[randint(0, len(entity_image) - 1)]
+                entity_image[randint(0, len(entity_image) - 1)]
             self.image_group = Aimation_group_selection(entity_type,
                                                         entity_image,
                                                         SIZE_SPRITE.get(
@@ -565,9 +637,9 @@ class Entity_tile(pygame.sprite.Sprite):
                                                             (1, 1)))
             self.image = self.image_group.image
             self.rect = self.image.get_rect().move(int(tile_width * (
-                        pos_x + 0.5) - self.image.get_rect().width * 0.5),
+                    pos_x + 0.5) - self.image.get_rect().width * 0.5),
                                                    int(tile_height * (
-                                                               pos_y + 1) - self.image.get_rect().height))
+                                                           pos_y + 1) - self.image.get_rect().height))
 
     def __init__(self, tile_type: str, size_collision: list, pos_x: str,
                  pos_y: str, max_hp: int):
@@ -620,7 +692,7 @@ class Player_group_tile(Entity_tile):
             self.entity_image.rect = self.entity_image.rect.move(*move)
             if pygame.sprite.spritecollideany(self,
                                               walls_group) or pygame.sprite.spritecollideany(
-                    self, decor_collision_group):
+                self, decor_collision_group):
                 move = (-move[0], -move[1])
                 self.rect = self.rect.move(*move)
                 self.entity_image.rect = self.entity_image.rect.move(*move)
@@ -631,19 +703,19 @@ class Player_group_tile(Entity_tile):
             return
         if keys[pygame.K_UP]:
             self.move[1] -= int(player_speed * tick + 1) / (
-                        (sum(keys) + 1) % 2 + 1) ** 0.5
+                    (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
         if keys[pygame.K_DOWN]:
             self.move[1] += int(player_speed * tick + 1) / (
-                        (sum(keys) + 1) % 2 + 1) ** 0.5
+                    (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
         if keys[pygame.K_LEFT]:
             self.move[0] -= int(player_speed * tick + 1) / (
-                        (sum(keys) + 1) % 2 + 1) ** 0.5
+                    (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
         if keys[pygame.K_RIGHT]:
             self.move[0] += int(player_speed * tick + 1) / (
-                        (sum(keys) + 1) % 2 + 1) ** 0.5
+                    (sum(keys) + 1) % 2 + 1) ** 0.5
             move_def()
         if self.hp <= 0:
             self.kill()
@@ -665,7 +737,7 @@ class Enemy_group1_tile(Entity_tile):
         self.entity_image.hp = 30
         enemy_group.add(self.entity_image, self)
         enemy_image_group.add(self.entity_image)
-        self.weapon = Mace(self, load_image_data('bulava.png', -1), 1)
+        self.weapon = Mace(self, load_image_data('bulava.png', -1), 10)
 
     def update(self, tick, **kwargs):
         '''передвижение врагов, работает хреново'''
@@ -673,8 +745,10 @@ class Enemy_group1_tile(Entity_tile):
             self.entity_image.image_group.update(self.step)
             self.entity_image.image = self.entity_image.image_group.image
             return
-
-        player = player_group.sprites()[0]
+        try:
+            player = player_group.sprites()[0]
+        except:
+            death_screen()
         pos_player_center = (player.rect.x + player.rect.width * 0.5,
                              player.rect.y + player.rect.height * 0.5)
         pos_enemy_center = (self.rect.x + self.rect.width * 0.5,
@@ -686,10 +760,10 @@ class Enemy_group1_tile(Entity_tile):
             pos_delta = (pos_delta[0] / distance * tick * enemy_speed,
                          pos_delta[1] / distance * tick * enemy_speed)
             self.move = (
-            self.move[0] + pos_delta[0], self.move[1] + pos_delta[1])
+                self.move[0] + pos_delta[0], self.move[1] + pos_delta[1])
             self.step = (int(self.move[0]), int(self.move[1]))
             self.move = (
-            self.move[0] - self.step[0], self.move[1] - self.step[1])
+                self.move[0] - self.step[0], self.move[1] - self.step[1])
             self.rect = self.rect.move(*self.step)
             self.entity_image.rect = self.entity_image.rect.move(*self.step)
         except ZeroDivisionError:
@@ -838,10 +912,10 @@ class Mace(pygame.sprite.Sprite):
                  damage: int):
         super().__init__(all_sprites_group, enemy_weapon_group)
         self.original_image = self.image = pygame.transform.scale(image,
-                                                                  (30, 30))
-        self.can_attack = 300
+                                                                  (15, 15))
+        self.can_attack = 200
         self.rect = self.image.get_rect()
-        self.rect.x, self.rect.y = owner.rect.x, owner.rect.y
+        self.rect.x, self.rect.y = owner.rect.x // 2 // 2, owner.rect.y
         self.damage = damage
         self.angle = 0
         self.owner = owner
@@ -850,8 +924,7 @@ class Mace(pygame.sprite.Sprite):
         if len(self.owner.groups()) == 0:
             self.kill()
         x, y = self.owner.rect.x, self.owner.rect.y
-        self.rect.x = x
-        self.rect.y = y
+        self.rect.x, self.rect.y = self.owner.rect.x + self.owner.rect.w // 2, self.owner.rect.y
         player = player_group.sprites()[0].rect
         player_x, player_y = player.x, player.y
 
@@ -864,11 +937,11 @@ class Mace(pygame.sprite.Sprite):
         else:
             self.image = pygame.transform.rotate(self.original_image,
                                                  self.angle)
-        if self.can_attack < 300:
+        if self.can_attack < 200:
             self.can_attack += 1
 
     def attack(self):
-        if self.can_attack >= 300:
+        if self.can_attack >= 200:
             player_group.sprites()[0].hp -= self.damage
             Crush(self, self.angle)
             self.can_attack = 0
@@ -901,19 +974,19 @@ class Weapon(pygame.sprite.Sprite):
     def __init__(self, image: pygame.Surface, damage: int):
         super().__init__(weapon_group)
         player = player_group.sprites()[0].rect
-        x, y = player.x, player.y
+        x, y = player.x + player.w, player.y - player.h
 
         self.damage = damage
         self.rect = pygame.Rect(x, y, *image.get_size())
         self.image = image
         self.original_image = self.image = pygame.transform.scale(self.image,
-                                                                  (30, 30))
+                                                                  (15, 15))
         self.angle = 1
 
     def update(self, *args, **kwargs):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         player = player_group.sprites()[0].rect
-        x, y = player.x, player.y
+        x, y = player.x + player.w // 2 // 2, player.y - player.h
         self.rect.x = x
         self.rect.y = y
         self.angle = -1 * math.degrees(math.atan2(mouse_y - self.rect.y,
@@ -962,7 +1035,8 @@ class Bullet(pygame.sprite.Sprite):
         x, y = weapon.x + weapon.w // 2, weapon.y + weapon.h // 2
         # Нахожу угол траектории полета
         self.angle = math.atan2(mouse_y - y, mouse_x - x)
-        self.image = load_image_data('bullet.png')
+        self.image = pygame.transform.scale(load_image_data('bullet.png'),
+                                            (5, 5))
         self.rect = pygame.Rect(x, y,
                                 self.image.get_width(),
                                 self.image.get_height())
@@ -1019,7 +1093,6 @@ def main():
     effects_group = pygame.sprite.Group()
     checks_group = pygame.sprite.Group()
     enemy_weapon_group = pygame.sprite.Group()
-    loaded_level = load_level('level_test1.txt')
 
     size_screen = (
         tile_width * loaded_level[1][0], tile_height * loaded_level[1][1])
@@ -1100,8 +1173,11 @@ def main():
                 pygame.time.set_timer(ReloadPistolEvent, 0)
                 reload_in_progress = False
             if event.type == DeleteEnemyEffects:
-                effects_group.sprites()[0].kill()
-                pygame.time.set_timer(DeleteEnemyEffects, 0)
+                if len(effects_group.sprites()):
+                    effects_group.sprites()[0].kill()
+        if len(enemy_group.sprites()) <= 0:
+            win_screen()
+
         time = clock.get_time() / 1000
         player_group.update(time)
         enemy_group.update(time)
