@@ -399,10 +399,10 @@ def choose_level():
                 running_choose_level = False
                 terminate()
             if event.type == StartLevel1:
-                loaded_level = load_level('level_test1.txt')
+                loaded_level = load_level('level1.txt')
                 main()
             if event.type == StartLevel2:
-                loaded_level = load_level('level_test2.txt')
+                loaded_level = load_level('level2.txt')
                 main()
             if event.type == BackEvent:
                 running_choose_level = False
@@ -734,7 +734,7 @@ class Enemy_group1_tile(Entity_tile):
         tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp,
                         self.entity_type)
-        self.entity_image.hp = 30
+        self.entity_image.hp = 100
         enemy_group.add(self.entity_image, self)
         enemy_image_group.add(self.entity_image)
         self.weapon = Mace(self, load_image_data('bulava.png', -1), 10)
@@ -817,7 +817,7 @@ class Hero(Player_group_tile):
     def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp):
         super().__init__(tile_type, size_collision, pos_x, pos_y, max_hp)
         load = load_image_data
-        self.now_weapon = Pistol(load('pistol.png', -1), 10)
+        self.now_weapon = Pistol(load('pistol.png', -1), 20)
         weapon_group.add(self.now_weapon)
 
     def attack(self, mouse_x, mouse_y):
@@ -827,10 +827,10 @@ class Hero(Player_group_tile):
         load = load_image_data
         if type(self.now_weapon) == Pistol:
             weapon_pic = load('sword.png', -1)
-            self.now_weapon = Sword(weapon_pic, 10)
+            self.now_weapon = Sword(weapon_pic, 20)
         else:
             weapon_pic = load('pistol.png', -1)
-            self.now_weapon = Pistol(weapon_pic, 10)
+            self.now_weapon = Pistol(weapon_pic, 20)
         weapon_group.sprites()[0].kill()
         weapon_group.add(self.now_weapon)
 
