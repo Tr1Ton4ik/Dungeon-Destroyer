@@ -841,7 +841,7 @@ class Crush(pygame.sprite.Sprite):
         self.rect = pygame.Rect(weapon.rect.x, weapon.rect.y,
                                 self.image.get_width(),
                                 self.image.get_height())
-        w_x, w_y = self.weapon.rect.x,self.weapon.rect.y  
+        w_x, w_y = self.weapon.rect.x, self.weapon.rect.y
         if 230 <= angle <= 270:
             self.rect = pygame.Rect(w_x, w_y - 32, 32, 32)
         elif 90 <= angle <= 148:
