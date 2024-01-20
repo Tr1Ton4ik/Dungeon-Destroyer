@@ -346,7 +346,7 @@ def choose_level():
     back_button = ScreenButton(0, 0, 100, 60, 'Назад',
                                'button.png', 'emptybutton_hover.png',
                                'data/click.mp3')
-    fon = pygame.transform.scale(load_image_data('level_menu.png'),
+    fon = pygame.transform.scale(load_image_data('lvl_menu_image.png'),
                                  size_display)
     display.blit(fon, (0, 0))
     while running_choose_level:
