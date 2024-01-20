@@ -62,8 +62,6 @@ ShootingEvent = pygame.USEREVENT + 1
 StartLevel1 = pygame.USEREVENT + 2
 BackEvent = pygame.USEREVENT + 3
 ENTITYIMAGESWAP = pygame.USEREVENT + 4
-ShootingEvent = pygame.USEREVENT + 5
-StartLevel1 = pygame.USEREVENT + 6
 
 
 def load_image_data(name: str, color_key=None):
@@ -132,16 +130,14 @@ def load_image(name: str, actual=False) -> list:
         pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, 0, w * 0.5, h))
     elif name == 'wall_right.png':
         pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w * 0.5, h))
-    elif name == 'wall_up_left_corner.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, h * 0.5, w * 0.5, h * 0.5))
-    elif name == 'wall_up_right_corner.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, h * 0.5, w * 0.5, h * 0.5))
-    elif name == 'wall_down_left_corner.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, 0, w * 0.5, h * 0.5))
-    elif name == 'wall_down_right_corner.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w * 0.5, h * 0.5))
-    elif name == 'floor1.png' or name == 'floor2.png' or name == 'floor3.png':
-        f.fill(pygame.Color('blue'))
+    # elif name == 'wall_up_left_corner.png':
+    #     pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, h * 0.5, w * 0.5, h * 0.5))
+    # elif name == 'wall_up_right_corner.png':
+    #     pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, h * 0.5, w * 0.5, h * 0.5))
+    # elif name == 'wall_down_left_corner.png':
+    #     pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, 0, w * 0.5, h * 0.5))
+    # elif name == 'wall_down_right_corner.png':
+    #     pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w * 0.5, h * 0.5))
     elif name == 'fon.png':
         return pygame.image.load(open('data/fon.png'))
 
@@ -156,8 +152,12 @@ def load_image(name: str, actual=False) -> list:
         pygame.draw.circle(f, pygame.Color('red'), (w * 0.5, h * 0.5), radius=w * 0.3)
 
     elif name == 'decor_collision1.png' or name == 'decor_collision2.png' or name == 'decor_collision3.png':
-        f = pygame.Surface((w * 0.5, h * 0.5))
-        f.fill(pygame.Color('red'))
+        f = pygame.sprite.Sprite()
+        f2 = pygame.Surface((w * 0.5, h * 0.5))
+        pygame.draw.rect(f2, pygame.Color('Red'), pygame.Rect(w * 0.25, h * 0.25, w * 0.5, h * 0.5))
+        f.image = f2
+        f.rect = f.image.get_rect()
+        f.mask = pygame.mask.from_surface(f.image)
 
     elif name == 'enemy11.png' or name == 'enemy12.png' or name == 'enemy13.png':
         f = pygame.Surface((70, 40), pygame.SRCALPHA)
@@ -334,17 +334,16 @@ class AnimatedSprite(pygame.sprite.Sprite):
 class Spase_tile(pygame.sprite.Sprite):
     '''класс прогрузки карты'''
     basic_spase_textures = {
-        'void': load_image('void.png'),
-        'wall_up': load_image('wall_up.png'),
-        'wall_down': load_image('wall_down.png'),
-        'wall_left': load_image('wall_left.png'),
-        'wall_right': load_image('wall_right.png'),
-        'wall_up_left_corner': load_image('wall_up_left_corner.png'),
-        'wall_up_right_corner': load_image('wall_up_right_corner.png'),
-        'wall_down_left_corner': load_image('wall_down_left_corner.png'),
-        'wall_down_right_corner': load_image('wall_down_right_corner.png'),
-        'floor': [load_image('floor1.png'), load_image('floor2.png'),
-                  load_image('floor3.png')],
+        'void': pygame.Surface((tile_width, tile_height)),
+        'wall_up': load_image('wall.png', actual=True),
+        'wall_down': load_image('wall.png', actual=True),
+        'wall_left': load_image('wall.png', actual=True),
+        'wall_right': load_image('wall.png', actual=True),
+        'wall_up_left_corner': load_image_data('wall.png'),
+        'wall_up_right_corner': load_image_data('wall.png'),
+        'wall_down_left_corner': load_image_data('wall.png'),
+        'wall_down_right_corner': load_image_data('wall.png'),
+        'floor': load_image('floor1.png', actual=True),
         'decor_free': [load_image('decor_free1.png'),
                        load_image('decor_free2.png'),
                        load_image('decor_free3.png')],
@@ -358,9 +357,9 @@ class Spase_tile(pygame.sprite.Sprite):
         tile_type = tile_type_translate(tile_type)
         self.add_group(tile_type, pos_x, pos_y)
         self.make_texture(tile_type, pos_x, pos_y)
-        if self in decor_collision_group:
-            rect = self.image.get_rect()
-            self.rect =pygame.Rect(tile_width * (pos_x + 0.5) - rect.width * 0.5, tile_height * (pos_y + 0.5) - rect.height * 0.5, rect.width, rect.height)
+        # if self in decor_collision_group:
+        #     rect = self.image.get_rect()
+        #     self.rect =pygame.Rect(tile_width * (pos_x + 0.5) - rect.width * 0.5, tile_height * (pos_y + 0.5) - rect.height * 0.5, rect.width, rect.height)
 
     def add_group(self, tile_type, pos_x, pos_y):
         '''добавляет в необходимую групу'''
@@ -387,8 +386,8 @@ class Spase_tile(pygame.sprite.Sprite):
     def make_texture(self, tile_type, pos_x, pos_y):
         '''загружает текстуру объекта'''
         image = self.basic_spase_textures[tile_type]
-        self.image = image if not isinstance(image, list) else image[
-            randint(0, len(image) - 1)]
+        image = image if not isinstance(image, list) else image[randint(0, len(image) - 1)]
+        self.image = pygame.transform.scale(image, (tile_width, tile_height))
         pygame.draw.line(self.image, pygame.Color('black'),
                          (tile_width, 0),
                          (tile_width, tile_height),
@@ -679,6 +678,8 @@ def main():
                     elif not shooting:
                         pygame.time.set_timer(ShootingEvent, 0)
                         shooting = True
+            # if event.type == ENTITYIMAGESWAP:
+            #     player_group.update(time, image_swap=True)
             if event.type == ShootingEvent:
                 player_group.sprites()[0].attack(*pygame.mouse.get_pos(), 10)
             if event.type == BackEvent:
