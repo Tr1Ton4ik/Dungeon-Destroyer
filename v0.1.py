@@ -122,22 +122,6 @@ def load_image(name: str, actual=False) -> list:
     f.fill(pygame.Color('white'))
     if name == 'void.png':
         pass
-    elif name == 'wall_up.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, h * 0.5, w, h * 0.5))
-    elif name == 'wall_down.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w, h * 0.5))
-    elif name == 'wall_left.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, 0, w * 0.5, h))
-    elif name == 'wall_right.png':
-        pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w * 0.5, h))
-    # elif name == 'wall_up_left_corner.png':
-    #     pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, h * 0.5, w * 0.5, h * 0.5))
-    # elif name == 'wall_up_right_corner.png':
-    #     pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, h * 0.5, w * 0.5, h * 0.5))
-    # elif name == 'wall_down_left_corner.png':
-    #     pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(w * 0.5, 0, w * 0.5, h * 0.5))
-    # elif name == 'wall_down_right_corner.png':
-    #     pygame.draw.rect(f, pygame.Color('black'), pygame.Rect(0, 0, w * 0.5, h * 0.5))
     elif name == 'fon.png':
         return pygame.image.load(open('data/fon.png'))
 
@@ -311,14 +295,15 @@ def tile_type_translate(tile_type):
 
 
 class AnimatedSprite(pygame.sprite.Sprite):
-    def __init__(self, sheet, columns, rows):
+    def __init__(self, sheet, size):
         super().__init__(all_sprites_group)
         self.frames = []
-        self.cut_sheet(sheet, columns, rows)
+        self.cut_sheet(sheet, size)
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
 
-    def cut_sheet(self, sheet, columns, rows):
+    def cut_sheet(self, sheet, size):
+        columns, rows = size
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns,
                                 sheet.get_height() // rows)
         for j in range(rows):
@@ -406,9 +391,7 @@ class Entity_tile(pygame.sprite.Sprite):
     '''родительский класс существ(игрока, врагов и т.д.)'''
     basic_entitys_textures = {
         'player': load_image('player.png'),
-        'enemy_group1': [load_image('enemy11.png'),
-                         load_image('enemy12.png'),
-                         load_image('enemy13.png')],
+        'enemy_group1': load_image('enemy11.png'),
         'enemy_group2': [load_image('enemy21.png'),
                          load_image('enemy22.png'),
                          load_image('enemy23.png')],
@@ -433,7 +416,7 @@ class Entity_tile(pygame.sprite.Sprite):
             self.hp = max_hp
             entity_image = Entity_tile.basic_entitys_textures[tile_type]
             entity_image = entity_image if not isinstance(entity_image, list) else entity_image[randint(0, len(entity_image) - 1)]
-            self.image_group = AnimatedSprite(entity_image, *SIZE_SPRITE.get(entity_type, (1, 1)))
+            self.image_group = AnimatedSprite(entity_image, SIZE_SPRITE.get(entity_type, (1, 1)))
             self.image = self.image_group.image
             self.rect = self.image.get_rect().move(int(tile_width * (pos_x + 0.5) - self.image.get_rect().width * 0.5),
                                                    int(tile_height * (pos_y + 1) - self.image.get_rect().height))
