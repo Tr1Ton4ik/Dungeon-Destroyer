@@ -612,7 +612,7 @@ class Enemy_group1_tile(Entity_tile):
     entity_type = 'enemy_group1'
 
     def __init__(self, tile_type, size_collision, pos_x, pos_y, max_hp: int):
-        # self.weapon = Mace(self, load_image_data(..., -1), 30)
+
         self.move = (0, 0)
         tile_type = tile_type_translate(tile_type)
         self.make_model(tile_type, size_collision, pos_x, pos_y, max_hp,
@@ -620,6 +620,7 @@ class Enemy_group1_tile(Entity_tile):
         self.entity_image.hp = 30
         enemy_group.add(self.entity_image, self)
         enemy_image_group.add(self.entity_image)
+        self.weapon = ...
 
     def update(self, tick):
         '''передвижение врагов, работает хреново'''
@@ -651,7 +652,12 @@ class Enemy_group1_tile(Entity_tile):
         if self.entity_image.hp <= 0:
             self.entity_image.kill()
             self.kill()
-        # Crushing(self.weapon)
+        r = self.rect
+        weapon = self.weapon
+        Check_player(r.x + r.w // 2 // 2, r.y + 32, 32, 32, weapon)
+        Check_player(r.x + r.w // 2 // 2, r.y - 32, 32, 32, weapon)
+        Check_player(r.x + r.w // 2 // 2 + 32, r.y, 32, 32, weapon)
+        Check_player(r.x + r.w // 2 // 2 - 32, r.y, 32, 32, weapon)
 
 
 def enemy_tile_group(tile_tipe: str, x: str, y: str) -> None:
@@ -755,13 +761,12 @@ class Slash(pygame.sprite.Sprite):
             self.kill()
 
 
-class Crushing(pygame.sprite.Sprite):
-    def __init__(self, weapon, x: int, y: int, w: int, h: int, damage: int):
-        super().__init__(crushes_group, all_sprites_group)
+class Check_player(pygame.sprite.Sprite):
+    def __init__(self, x: int, y: int, w: int, h: int, weapon):
+        super().__init__(checks_group, all_sprites_group)
         self.weapon = weapon
-        self.damage = damage
-        self.image = pygame.Surface((32, 32), pygame.SRCALPHA)
-        self.image.fill((0, 0, 0, 0))
+        self.image = pygame.Surface((32, 32))
+        self.image.fill((0, 0, 0))
         self.rect = pygame.Rect(x, y, w, h)
 
     def update(self):
@@ -806,6 +811,13 @@ class Mace(pygame.sprite.Sprite):
 
     def attack(self):
         pass
+
+
+class Crush(pygame.sprite.Sprite):
+    def __init__(self, angle, damage):
+        super().__init__(effects_group, all_sprites_group)
+        self.angle = angle
+        self.damage = damage
 
 
 class Weapon(pygame.sprite.Sprite):
@@ -897,7 +909,7 @@ def main():
         player_image_group, enemy_group, enemy_image_group, spase_group, \
         decor_free_group, decor_collision_group, walls_group, walls_group_up, \
         walls_group_down, walls_group_left, walls_group_right, void_spase_group, \
-        bullets_group, weapon_group, effects_group, slash_group, crushes_group, \
+        bullets_group, weapon_group, effects_group, slash_group, checks_group, \
         enemy_weapon_group
 
     tile_width = tile_height = 80
@@ -926,7 +938,7 @@ def main():
     weapon_group = pygame.sprite.Group()
     slash_group = pygame.sprite.Group()
     effects_group = pygame.sprite.Group()
-    crushes_group = pygame.sprite.Group()
+    checks_group = pygame.sprite.Group()
     enemy_weapon_group = pygame.sprite.Group()
     loaded_level = load_level('level_test1.txt')
 
@@ -1022,6 +1034,8 @@ def main():
         slash_group.update()
         effects_group.draw(screen)
         effects_group.update()
+        checks_group.draw(screen)
+        checks_group.update()
         walls_group.draw(screen)
         display.blit(screen, (0, 0))
         health.draw()
