@@ -331,7 +331,7 @@ def death_screen() -> None:
     text_y = HEIGHT // 2 - text.get_height() // 2
     text_w = text.get_width()
     text_h = text.get_height()
-    button = ScreenButton(text_x + text.get_width(), text_y + 50, 160, 50,
+    button = ScreenButton(WIDTH//2-75, HEIGHT//2+100, 160, 50,
                           'Продолжить',
                           'button.png', 'emptybutton_hover.png',
                           'data/click.mp3')
@@ -773,6 +773,7 @@ class Enemy_group1_tile(Entity_tile):
             raise SystemExit(message)
 
         if self.entity_image.hp <= 0:
+            pygame.mixer.Sound('data/skelet_death.mp3').play()
             self.entity_image.kill()
             self.kill()
         r = self.rect
@@ -915,7 +916,7 @@ class Mace(pygame.sprite.Sprite):
                                                                   (15, 15))
         self.can_attack = 200
         self.rect = self.image.get_rect()
-        self.rect.x, self.rect.y = owner.rect.x // 2 // 2, owner.rect.y
+        self.rect.x, self.rect.y = owner.rect.x // 2 // 2, owner.rect.y - 50
         self.damage = damage
         self.angle = 0
         self.owner = owner
@@ -924,7 +925,7 @@ class Mace(pygame.sprite.Sprite):
         if len(self.owner.groups()) == 0:
             self.kill()
         x, y = self.owner.rect.x, self.owner.rect.y
-        self.rect.x, self.rect.y = self.owner.rect.x + self.owner.rect.w // 2, self.owner.rect.y
+        self.rect.x, self.rect.y = self.owner.rect.x+5, self.owner.rect.y - 10
         player = player_group.sprites()[0].rect
         player_x, player_y = player.x, player.y
 
@@ -1198,9 +1199,9 @@ def main():
         effects_group.update()
         checks_group.draw(screen)
         checks_group.update()
-        walls_group.draw(screen)
         enemy_weapon_group.draw(screen)
         enemy_weapon_group.update()
+        walls_group.draw(screen)
         display.blit(screen, (0, 0))
         health.draw()
         stamina.draw()
